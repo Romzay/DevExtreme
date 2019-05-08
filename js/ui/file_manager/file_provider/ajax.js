@@ -39,6 +39,10 @@ class AjaxFileProvider extends FileProvider {
          * @name AjaxFileProviderOptions.thumbnailExpr
          * @type string|function(fileItem)
          */
+        /**
+         * @name AjaxFileProviderOptions.itemsExpr
+         * @type string|function(fileItem)
+         */
         this._options = options;
         this._provider = null;
     }
@@ -101,7 +105,7 @@ class AjaxFileProvider extends FileProvider {
 
     _getData() {
         return ajax.sendRequest({
-            url: this.options.url,
+            url: this._options.url,
             dataType: "json",
             cache: false
         });

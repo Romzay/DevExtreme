@@ -77,38 +77,34 @@ class Diagram extends Widget {
     }
     _renderLeftPanel($parent) {
         const isServerSide = !hasWindow();
+
         const $leftPanel = $("<div>")
             .appendTo($parent);
 
-        var customShapes = this.option("customShapes");
-        this._createComponent($leftPanel, DiagramLeftPanel, {
-            showCustomShapes: Array.isArray(customShapes) && customShapes.length,
-            onShapeCategoryRendered: (e) => !isServerSide && this._diagramInstance.createToolbox(e.$element[0], 40, 8, {}, e.category)
+        this._leftPanel = this._createComponent($leftPanel, DiagramLeftPanel, {
+            dataSources: this._getDataSources(),
+            customShapes: this._getCustomShapes(),
+            onShapeCategoryRendered: (e) => !isServerSide && this._diagramInstance.createToolbox(e.$element[0], 40, 8, {}, e.category),
+            onDataToolboxRendered: (e) => !isServerSide && this._diagramInstance.createDataSourceToolbox(e.key, e.$element[0])
         });
+    }
+    _invalidateLeftPanel() {
+        if(this._leftPanel) {
+            this._leftPanel.option({
+                dataSources: this._getDataSources(),
+                customShapes: this._getCustomShapes(),
+            });
+        }
     }
 
     _renderRightPanel($parent) {
-        const dataSources = this._getDataSources();
-        const isServerSide = !hasWindow();
-
         const drawer = this._createComponent($parent, Drawer, {
             closeOnOutsideClick: true,
             openedStateMode: "overlap",
             position: "right",
             template: ($options) => {
                 this._createComponent($options, DiagramRightPanel, {
-                    dataSources,
-                    onContentReady: (e) => this._diagramInstance.barManager.registerBar(e.component.bar),
-                    onDataToolboxRendered: (e) => {
-                        if(isServerSide) return;
-
-                        for(var key in dataSources) {
-                            if(dataSources.hasOwnProperty(key)) {
-                                var $toolbox = e.$element.children("[data-key='" + key + "']");
-                                this._diagramInstance.createDataSourceToolbox(key, $toolbox[0]);
-                            }
-                        }
-                    }
+                    onContentReady: (e) => this._diagramInstance.barManager.registerBar(e.component.bar)
                 });
             }
         });
@@ -140,8 +136,10 @@ class Diagram extends Widget {
         this._diagramInstance.onNodeInserted = this._raiseNodeInsertedAction.bind(this);
         this._diagramInstance.onNodeUpdated = this._raiseNodeUpdatedAction.bind(this);
         this._diagramInstance.onNodeRemoved = this._raiseNodeRemovedAction.bind(this);
+        this._diagramInstance.onToolboxDragStart = this._raiseToolboxDragStart.bind(this);
+        this._diagramInstance.onToolboxDragEnd = this._raiseToolboxDragEnd.bind(this);
 
-        this._updateCustomShapes(this.option("customShapes"));
+        this._updateCustomShapes(this._getCustomShapes());
         this._refreshDataSources();
     }
     _refreshDataSources() {
@@ -188,14 +186,17 @@ class Diagram extends Widget {
         });
     }
 
-    _createDiagramDataSource(options) {
-        const key = options.key || "0";
-        const name = options.name || "Data Source";
-        const nodes = options.nodes || {};
-        const edges = options.edges || {};
+    _getDataSources() {
+        return this.option("dataSources") || {};
+    }
+    _createDiagramDataSource(parameters) {
+        const key = parameters.key || "0";
+        const title = parameters.title || "Data Source";
+        const nodes = parameters.nodes || {};
+        const edges = parameters.edges || {};
 
         const data = {
-            key, name,
+            key, title,
             nodeDataSource: nodes.dataSource,
             edgeDataSource: edges.dataSource,
             nodeDataImporter: {
@@ -207,7 +208,9 @@ class Diagram extends Widget {
                 setType: this._createSetter(nodes.typeExpr || DIAGRAM_TYPE_FIELD),
 
                 getParentKey: this._createGetter(nodes.parentKeyExpr || DIAGRAM_PARENT_KEY_FIELD),
-                getItems: this._createGetter(nodes.itemsExpr || DIAGRAM_ITEMS_FIELD)
+                setParentKey: this._createSetter(nodes.parentKeyExpr || DIAGRAM_PARENT_KEY_FIELD),
+                getItems: this._createGetter(nodes.itemsExpr || DIAGRAM_ITEMS_FIELD),
+                setItems: this._createSetter(nodes.itemsExpr || DIAGRAM_ITEMS_FIELD)
             },
             edgeDataImporter: {
                 getKey: this._createGetter(edges.keyExpr || DIAGRAM_KEY_FIELD),
@@ -217,10 +220,14 @@ class Diagram extends Widget {
                 getTo: this._createGetter(edges.toExpr || DIAGRAM_TO_FIELD),
                 setTo: this._createSetter(edges.toExpr || DIAGRAM_TO_FIELD)
             },
-            layoutType: this._getDataSourceLayoutType(options.layout)
+            layoutType: this._getDataSourceLayoutType(parameters.layout)
         };
-        this._addDiagramDataSource(key, data);
-        this._importDiagramDataSource(key);
+        const { DiagramCommand } = getDiagram();
+        this._diagramInstance.commandManager.getCommand(DiagramCommand.ImportDataSource).execute(data);
+
+        var dataSources = this._getDataSources();
+        dataSources[key] = data;
+        this.option("dataSources", dataSources);
     }
     _getDataSourceLayoutType(layout) {
         const { DataLayoutType } = getDiagram();
@@ -231,38 +238,15 @@ class Diagram extends Widget {
                 return DataLayoutType.Sugiyama;
         }
     }
-    _getDataSources() {
-        return this.option("dataSources") || {};
-    }
-    _addDiagramDataSource(key, data) {
-        var dataSources = this._getDataSources();
-        dataSources[key] = data;
-        this.option("dataSources", dataSources);
-    }
-    _importDiagramDataSource(key) {
-        const { DiagramCommand } = getDiagram();
-
-        var dataSources = this._getDataSources();
-        if(dataSources[key]) {
-            this._diagramInstance.commandManager.getCommand(DiagramCommand.ImportDataSource).execute(dataSources[key]);
-        }
-    }
     _deleteDiagramDataSource(key) {
-        this._closeDiagramDataSource(key);
-        this._removeDiagramDataSource(key);
-    }
-    _closeDiagramDataSource(key) {
-        const { DiagramCommand } = getDiagram();
-
         var dataSources = this._getDataSources();
         if(dataSources[key]) {
+            const { DiagramCommand } = getDiagram();
             this._diagramInstance.commandManager.getCommand(DiagramCommand.CloseDataSource).execute(key);
+
+            delete dataSources[key];
+            this.option("dataSources", dataSources);
         }
-    }
-    _removeDiagramDataSource(key) {
-        var dataSources = this._getDataSources();
-        delete dataSources[key];
-        this.option("dataSources", dataSources);
     }
 
     _nodesDataSourceChanged(nodes) {
@@ -342,6 +326,9 @@ class Diagram extends Widget {
         }
     }
 
+    _getCustomShapes() {
+        return this.option("customShapes") || [];
+    }
     _updateCustomShapes(customShapes, prevCustomShapes) {
         if(Array.isArray(prevCustomShapes)) {
             this._diagramInstance.removeCustomShapes(customShapes.map(
@@ -387,12 +374,99 @@ class Diagram extends Widget {
     }
 
     /**
-    * @name dxDiagramMethods.createDataSource
-    * @publicName createDataSource(options)
-    * @param1 options:object
+     * @name DiagramDataSourceParameters
+     * @type object
+     */
+    /**
+    * @name DiagramDataSourceParameters.key
+    * @type string
+    * @default null
     */
-    createDataSource(options) {
-        this._createDiagramDataSource(options);
+    /**
+    * @name DiagramDataSourceParameters.title
+    * @type string
+    * @default null
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes
+    * @type object
+    * @default null
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.dataSource
+    * @type Array<Object>|DataSource|DataSourceOptions
+    * @default null
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.keyExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "id"
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.textExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "text"
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.typeExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "type"
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.parentKeyExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "parentId"
+    */
+    /**
+    * @name DiagramDataSourceParameters.nodes.itemsExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "items"
+    */
+    /**
+    * @name DiagramDataSourceParameters.edges
+    * @type Object
+    * @default null
+    */
+    /**
+    * @name DiagramDataSourceParameters.edges.dataSource
+    * @type Array<Object>|DataSource|DataSourceOptions
+    * @default null
+    */
+    /**
+    * @name DiagramDataSourceParameters.edges.keyExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "id"
+    */
+    /**
+    * @name DiagramDataSourceParameters.edges.fromExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "from"
+    */
+    /**
+    * @name DiagramDataSourceParameters.edges.toExpr
+    * @type string|function(data)
+    * @type_function_param1 data:object
+    * @default "to"
+    */
+    /**
+     * @name DiagramDataSourceParameters.layout
+     * @type Enums.DiagramAutoLayout
+     * @default undefined
+     */
+    /**
+    * @name dxDiagramMethods.createDataSource
+    * @publicName createDataSource(parameters)
+    * @param1 parameters:DiagramDataSourceParameters
+    */
+    createDataSource(parameters) {
+        this._createDiagramDataSource(parameters);
     }
     /**
     * @name dxDiagramMethods.deleteDataSource
@@ -602,6 +676,16 @@ class Diagram extends Widget {
             this._nodesOption.remove(key, callback);
         }
     }
+    _raiseToolboxDragStart() {
+        if(this._leftPanel) {
+            this._leftPanel.$element().addClass("dx-skip-gesture-event");
+        }
+    }
+    _raiseToolboxDragEnd() {
+        if(this._leftPanel) {
+            this._leftPanel.$element().removeClass("dx-skip-gesture-event");
+        }
+    }
 
     _optionChanged(args) {
         switch(args.name) {
@@ -616,13 +700,13 @@ class Diagram extends Widget {
                 break;
             case "customShapes":
                 this._updateCustomShapes(args.value, args.previousValue);
-                this._invalidate();
+                this._invalidateLeftPanel();
                 break;
             case "onDataChanged":
                 this._createDataChangeAction();
                 break;
             case "dataSources":
-                this._invalidate();
+                this._invalidateLeftPanel();
                 break;
             case "export":
                 this._toolbarInstance.option("export", this.option("export"));

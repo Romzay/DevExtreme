@@ -1,4 +1,5 @@
 import $ from "jquery";
+import { extend } from "core/utils/extend";
 
 export const TOOLBAR_TOP_LOCATION = "top";
 export const TOOLBAR_BOTTOM_LOCATION = "bottom";
@@ -77,15 +78,18 @@ export class SchedulerTestWrapper {
 
         this.appointmentPopup = {
             getPopup: () => $(".dx-overlay-wrapper.dx-scheduler-appointment-popup"),
+            hasVerticalScroll: () => {
+                const scrollableContainer = this.appointmentPopup.getPopup().find(".dx-scrollable-container").get(0);
+                return scrollableContainer.scrollHeight > scrollableContainer.clientHeight;
+            },
             getPopupInstance: () => $(".dx-scheduler-appointment-popup.dx-widget").dxPopup("instance"),
             isVisible: () => this.appointmentPopup.getPopup().length !== 0,
             hide: () => this.appointmentPopup.getPopup().find(".dx-closebutton.dx-button").trigger("dxclick"),
-            setInitialWidth: width => {
+            setInitialPopupSize: (size) => {
                 const popupConfig = this.instance._popupConfig;
                 this.instance._popupConfig = appointmentData => {
                     const config = popupConfig.call(this.instance, appointmentData);
-                    config.width = width;
-                    return config;
+                    return extend(config, size);
                 };
             },
             setPopupWidth: width => this.appointmentPopup.getPopupInstance().option("width", width),
@@ -97,7 +101,9 @@ export class SchedulerTestWrapper {
                 const $toolbar = this.appointmentPopup.getToolbarElementByLocation(toolBarLocation);
                 const $buttons = $toolbar.find(`.dx-toolbar-${sectionName} .dx-button`);
                 return buttonNames.every((name, index) => $buttons.eq(index).hasClass(`dx-popup-${name}`));
-            }
+            },
+            getDoneButton: () => this.appointmentPopup.getPopup().find(".dx-popup-done"),
+            clickDoneButton: () => this.appointmentPopup.getDoneButton().trigger("dxclick")
         };
 
         this.appointmentForm = {
@@ -106,6 +112,10 @@ export class SchedulerTestWrapper {
         };
 
         this.workSpace = {
+            getWorkSpace: () => $(".dx-scheduler-work-space"),
+            getDateTableScrollable: () => $(".dx-scheduler-date-table-scrollable"),
+            getDateTable: () => $(".dx-scheduler-date-table"),
+            getDateTableHeight: () => this.workSpace.getDateTable().height(),
             getCells: () => $(".dx-scheduler-date-table-cell"),
             getCell: (index) => this.workSpace.getCells().eq(index),
             getAllDayCells: () => $(".dx-scheduler-all-day-table-cell"),
@@ -114,6 +124,14 @@ export class SchedulerTestWrapper {
             getCellHeight: () => this.workSpace.getCells().eq(0).outerHeight(),
             getAllDayCellWidth: () => this.workSpace.getAllDayCells().eq(0).outerWidth(),
             getAllDayCellHeight: () => this.workSpace.getAllDayCells().eq(0).outerHeight()
+        };
+
+        this.grouping = {
+            getGroupHeaders: () => $(".dx-scheduler-group-header"),
+            getGroupHeader: (index = 0) => this.grouping.getGroupHeaders().eq(index),
+            getGroupHeaderHeight: () => this.grouping.getGroupHeader(0).outerHeight(),
+            getGroupTable: () => $(".dx-scheduler-group-table"),
+            getGroupTableHeight: () => this.grouping.getGroupTable().height()
         };
     }
 

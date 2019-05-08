@@ -120,7 +120,7 @@ var BaseRenderingStrategy = Class.inherit({
             isRecurring = !!this.instance.fire("getField", "recurrenceRule", item);
 
         for(var j = 0; j < position.length; j++) {
-            var height = this.calculateAppointmentHeight(item, position[j]),
+            var height = this.calculateAppointmentHeight(item, position[j], isRecurring),
                 width = this.calculateAppointmentWidth(item, position[j], isRecurring),
                 resultWidth = width,
                 appointmentReduced = null,
@@ -488,15 +488,20 @@ var BaseRenderingStrategy = Class.inherit({
             viewStartDate = this.startDate(appointment, false, position);
 
         if(viewStartDate.getTime() > endDate.getTime() || isRecurring) {
-            var recurrencePartStartDate = position ? position.startDate : realStartDate,
+            var recurrencePartStartDate = position ? position.initialStartDate || position.startDate : realStartDate,
+                recurrencePartCroppedByViewStartDate = position ? position.startDate : realStartDate,
                 fullDuration = endDate.getTime() - realStartDate.getTime();
 
             fullDuration = this._adjustDurationByDaylightDiff(fullDuration, realStartDate, endDate);
 
-            endDate = new Date((viewStartDate.getTime() >= recurrencePartStartDate.getTime() ? recurrencePartStartDate.getTime() : viewStartDate.getTime()) + fullDuration);
+            endDate = new Date((viewStartDate.getTime() >= recurrencePartStartDate.getTime() ? recurrencePartStartDate.getTime() : viewStartDate.getTime()));
 
-            if(!dateUtils.sameDate(realStartDate, endDate) && recurrencePartStartDate.getTime() < viewStartDate.getTime()) {
-                var headDuration = dateUtils.trimTime(endDate).getTime() - recurrencePartStartDate.getTime(),
+            if(isRecurring) {
+                endDate = new Date(endDate.getTime() + fullDuration);
+            }
+
+            if(!dateUtils.sameDate(realStartDate, endDate) && recurrencePartCroppedByViewStartDate.getTime() < viewStartDate.getTime()) {
+                var headDuration = dateUtils.trimTime(endDate).getTime() - recurrencePartCroppedByViewStartDate.getTime(),
                     tailDuration = fullDuration - headDuration || fullDuration;
 
                 endDate = new Date(dateUtils.trimTime(viewStartDate).getTime() + tailDuration);
@@ -650,7 +655,7 @@ var BaseRenderingStrategy = Class.inherit({
     },
 
     _isAppointmentEmpty: function(height, width) {
-        return height < this._getAppointmentDefaultHeight() || width < this._getAppointmentDefaultWidth();
+        return height < this._getAppointmentMinHeight() || width < this._getAppointmentMinWidth();
     },
 
     _calculateGeometryConfig: function(coordinates) {
@@ -741,12 +746,20 @@ var BaseRenderingStrategy = Class.inherit({
         return this._getAppointmentHeightByTheme();
     },
 
+    _getAppointmentMinHeight: function() {
+        return this._getAppointmentDefaultHeight();
+    },
+
     _getAppointmentHeightByTheme: function() {
         return this._isCompactTheme() ? COMPACT_THEME_APPOINTMENT_DEFAULT_HEIGHT : APPOINTMENT_DEFAULT_HEIGHT;
     },
 
     _getAppointmentDefaultWidth: function() {
         return this.getPositioningStrategy()._getAppointmentDefaultWidth();
+    },
+
+    _getAppointmentMinWidth: function() {
+        return this._getAppointmentDefaultWidth();
     },
 
     _needVerticalGroupBounds: function() {

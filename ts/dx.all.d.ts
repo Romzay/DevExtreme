@@ -565,6 +565,8 @@ declare module DevExpress.ui {
         dateModifiedExpr?: string | Function;
         /** @name AjaxFileProvider.Options.isFolderExpr */
         isFolderExpr?: string | Function;
+        /** @name AjaxFileProvider.Options.itemsExpr */
+        itemsExpr?: string | Function;
         /** @name AjaxFileProvider.Options.nameExpr */
         nameExpr?: string | Function;
         /** @name AjaxFileProvider.Options.sizeExpr */
@@ -586,6 +588,8 @@ declare module DevExpress.ui {
         dateModifiedExpr?: string | Function;
         /** @name ArrayFileProvider.Options.isFolderExpr */
         isFolderExpr?: string | Function;
+        /** @name ArrayFileProvider.Options.itemsExpr */
+        itemsExpr?: string | Function;
         /** @name ArrayFileProvider.Options.nameExpr */
         nameExpr?: string | Function;
         /** @name ArrayFileProvider.Options.sizeExpr */
@@ -723,6 +727,19 @@ declare module DevExpress.ui {
         /** @name DiagramCustomShapeItem.svgUrl */
         svgUrl?: string;
         /** @name DiagramCustomShapeItem.title */
+        title?: string;
+    }
+    /** @name DiagramDataSourceParameters */
+    export interface DiagramDataSourceParameters {
+        /** @name DiagramDataSourceParameters.edges */
+        edges?: { dataSource?: Array<any> | DevExpress.data.DataSource | DevExpress.data.DataSourceOptions, fromExpr?: string | ((data: any) => any), keyExpr?: string | ((data: any) => any), toExpr?: string | ((data: any) => any) };
+        /** @name DiagramDataSourceParameters.key */
+        key?: string;
+        /** @name DiagramDataSourceParameters.layout */
+        layout?: 'tree' | 'sugiyama';
+        /** @name DiagramDataSourceParameters.nodes */
+        nodes?: { dataSource?: Array<any> | DevExpress.data.DataSource | DevExpress.data.DataSourceOptions, itemsExpr?: string | ((data: any) => any), keyExpr?: string | ((data: any) => any), parentKeyExpr?: string | ((data: any) => any), textExpr?: string | ((data: any) => any), typeExpr?: string | ((data: any) => any) };
+        /** @name DiagramDataSourceParameters.title */
         title?: string;
     }
     /** @name Editor.Options */
@@ -1338,6 +1355,8 @@ declare module DevExpress.ui {
         dateModifiedExpr?: string | Function;
         /** @name WebApiFileProvider.Options.endpointUrl */
         endpointUrl?: string;
+        /** @name WebApiFileProvider.Options.hasSubDirectoriesExpr */
+        hasSubDirectoriesExpr?: string | Function;
         /** @name WebApiFileProvider.Options.isFolderExpr */
         isFolderExpr?: string | Function;
         /** @name WebApiFileProvider.Options.nameExpr */
@@ -2013,8 +2032,8 @@ declare module DevExpress.ui {
     export class dxDiagram extends Widget {
         constructor(element: Element, options?: dxDiagramOptions)
         constructor(element: JQuery, options?: dxDiagramOptions)
-        /** @name dxDiagram.createDataSource(options) */
-        createDataSource(options: any): void;
+        /** @name dxDiagram.createDataSource(parameters) */
+        createDataSource(parameters: DiagramDataSourceParameters): void;
         /** @name dxDiagram.deleteDataSource(key) */
         deleteDataSource(key: string): void;
         /** @name dxDiagram.getData() */
@@ -2116,6 +2135,8 @@ declare module DevExpress.ui {
         onItemClick?: ((e: { component?: dxDropDownButton, element?: DevExpress.core.dxElement, model?: any, event?: event, itemData?: any, itemElement?: DevExpress.core.dxElement }) => any) | string;
         /** @name dxDropDownButton.Options.onSelectionChanged */
         onSelectionChanged?: ((e: { component?: dxDropDownButton, element?: DevExpress.core.dxElement, model?: any, item?: any, previousItem?: any }) => any) | string;
+        /** @name dxDropDownButton.Options.opened */
+        opened?: boolean;
         /** @name dxDropDownButton.Options.selectedItem */
         selectedItem?: string | number | any;
         /** @name dxDropDownButton.Options.selectedItemKey */
@@ -2152,6 +2173,8 @@ declare module DevExpress.ui {
         activeStateEnabled?: boolean;
         /** @name dxDropDownEditor.Options.applyValueMode */
         applyValueMode?: 'instantly' | 'useButtons';
+        /** @name dxDropDownEditor.Options.buttons */
+        buttons?: Array<'clear' | 'dropDown' | dxTextEditorButton>;
         /** @name dxDropDownEditor.Options.deferRendering */
         deferRendering?: boolean;
         /** @name dxDropDownEditor.Options.dropDownButtonTemplate */
@@ -2266,26 +2289,30 @@ declare module DevExpress.ui {
     }
     /** @name dxFileManager.Options */
     export interface dxFileManagerOptions extends WidgetOptions<dxFileManager> {
+        /** @name dxFileManager.Options.customizeDetailColumns */
+        customizeDetailColumns?: ((columns: Array<dxDataGridColumn>) => Array<dxDataGridColumn>);
         /** @name dxFileManager.Options.customizeThumbnail */
         customizeThumbnail?: ((fileItem: any) => string);
         /** @name dxFileManager.Options.dateModifiedExpr */
-        dateModifiedExpr?: string | Function;
+        dateModifiedExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.fileProvider */
         fileProvider?: any;
         /** @name dxFileManager.Options.isFolderExpr */
-        isFolderExpr?: string | Function;
+        isFolderExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.itemView */
         itemView?: { mode?: 'details' | 'thumbnails', showFolders?: boolean, showParentFolder?: boolean };
         /** @name dxFileManager.Options.nameExpr */
-        nameExpr?: string | Function;
+        nameExpr?: string | ((fileItem: any) => any);
+        /** @name dxFileManager.Options.onSelectedFileOpened */
+        onSelectedFileOpened?: ((e: { component?: dxFileManager, element?: DevExpress.core.dxElement, model?: any, fileItem?: any }) => any);
         /** @name dxFileManager.Options.permissions */
         permissions?: { copy?: boolean, create?: boolean, move?: boolean, remove?: boolean, rename?: boolean, upload?: boolean };
         /** @name dxFileManager.Options.selectionMode */
         selectionMode?: 'multiple' | 'single';
         /** @name dxFileManager.Options.sizeExpr */
-        sizeExpr?: string | Function;
+        sizeExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.thumbnailExpr */
-        thumbnailExpr?: string | Function;
+        thumbnailExpr?: string | ((fileItem: any) => any);
     }
     /** @name dxFileManager */
     export class dxFileManager extends Widget {
@@ -3266,6 +3293,8 @@ declare module DevExpress.ui {
     }
     /** @name dxNumberBox.Options */
     export interface dxNumberBoxOptions extends dxTextEditorOptions<dxNumberBox> {
+        /** @name dxNumberBox.Options.buttons */
+        buttons?: Array<'clear' | 'spins' | dxTextEditorButton>;
         /** @name dxNumberBox.Options.format */
         format?: format;
         /** @name dxNumberBox.Options.invalidValueMessage */
@@ -3627,7 +3656,7 @@ declare module DevExpress.ui {
         /** @name dxPopup.Options.toolbarItems.visible */
         visible?: boolean;
         /** @name dxPopup.Options.toolbarItems.widget */
-        widget?: 'dxAutocomplete' | 'dxButton' | 'dxCheckBox' | 'dxDateBox' | 'dxMenu' | 'dxSelectBox' | 'dxTabs' | 'dxTextBox' | 'dxButtonGroup';
+        widget?: 'dxAutocomplete' | 'dxButton' | 'dxCheckBox' | 'dxDateBox' | 'dxMenu' | 'dxSelectBox' | 'dxTabs' | 'dxTextBox' | 'dxButtonGroup' | 'dxDropDownButton';
     }
     /** @name dxPopup */
     export class dxPopup extends dxOverlay {
@@ -4367,7 +4396,7 @@ declare module DevExpress.ui {
     /** @name dxTextEditor.Options */
     export interface dxTextEditorOptions<T = dxTextEditor> extends EditorOptions<T> {
         /** @name dxTextEditor.Options.buttons */
-        buttons?: Array<'clear' | 'spins' | 'dropDown' | dxTextEditorButton>;
+        buttons?: Array<string | 'clear' | dxTextEditorButton>;
         /** @name dxTextEditor.Options.focusStateEnabled */
         focusStateEnabled?: boolean;
         /** @name dxTextEditor.Options.hoverStateEnabled */
@@ -4554,7 +4583,7 @@ declare module DevExpress.ui {
         /** @name dxToolbarItem.showText */
         showText?: 'always' | 'inMenu';
         /** @name dxToolbarItem.widget */
-        widget?: 'dxAutocomplete' | 'dxButton' | 'dxCheckBox' | 'dxDateBox' | 'dxMenu' | 'dxSelectBox' | 'dxTabs' | 'dxTextBox' | 'dxButtonGroup';
+        widget?: 'dxAutocomplete' | 'dxButton' | 'dxCheckBox' | 'dxDateBox' | 'dxMenu' | 'dxSelectBox' | 'dxTabs' | 'dxTextBox' | 'dxButtonGroup' | 'dxDropDownButton';
     }
     /** @name dxTooltip.Options */
     export interface dxTooltipOptions extends dxPopoverOptions<dxTooltip> {
@@ -5629,9 +5658,9 @@ declare module DevExpress.viz {
         /** @name BaseChart.Options.onPointSelectionChanged */
         onPointSelectionChanged?: ((e: { component?: any, element?: any, target?: basePointObject }) => any);
         /** @name BaseChart.Options.onTooltipHidden */
-        onTooltipHidden?: ((e: { component?: T, element?: DevExpress.core.dxElement, model?: any, target?: basePointObject }) => any);
+        onTooltipHidden?: ((e: { component?: T, element?: DevExpress.core.dxElement, model?: any, target?: basePointObject | dxChartAnnotationConfig | any }) => any);
         /** @name BaseChart.Options.onTooltipShown */
-        onTooltipShown?: ((e: { component?: T, element?: DevExpress.core.dxElement, model?: any, target?: basePointObject }) => any);
+        onTooltipShown?: ((e: { component?: T, element?: DevExpress.core.dxElement, model?: any, target?: basePointObject | dxChartAnnotationConfig | any }) => any);
         /** @name BaseChart.Options.palette */
         palette?: Array<string> | 'Bright' | 'Default' | 'Harmony Light' | 'Ocean' | 'Pastel' | 'Soft' | 'Soft Pastel' | 'Vintage' | 'Violet' | 'Carmine' | 'Dark Moon' | 'Dark Violet' | 'Green Mist' | 'Soft Blue' | 'Material' | 'Office';
         /** @name BaseChart.Options.paletteExtensionMode */

@@ -42,7 +42,7 @@ function checkRect(rect, boundingRect) {
 }
 function Title(params) {
     this._params = params;
-    this._group = params.renderer.g().attr({ "class": params.cssClass }).linkOn(params.root || params.renderer.root, { name: "title", after: "peripheral" });
+    this._group = params.renderer.g().attr({ "class": params.cssClass }).linkOn(params.root || params.renderer.root, "title");
     this._hasText = false;
 }
 
@@ -194,6 +194,9 @@ extend(Title.prototype, require("./layout_element").LayoutElement.prototype, {
         }
 
         that._updateBoundingRect();
+
+        var bBox = this.getLayoutOptions();
+        this._clipRect.attr({ x: bBox.x, y: bBox.y - this._baseLineCorrection, width: width, height: bBox.height + this._baseLineCorrection });
     },
 
     getLayoutOptions: function() {
@@ -207,17 +210,9 @@ extend(Title.prototype, require("./layout_element").LayoutElement.prototype, {
     shift: function(x, y) {
         var that = this,
             box = that.getLayoutOptions();
-
         that._group.move(x - box.x, y - box.y);
-        that._setClipRectSettings();
 
         return that;
-    },
-
-    _setClipRectSettings: function() {
-        var bBox = this.getLayoutOptions();
-
-        this._clipRect.attr({ x: bBox.x, y: bBox.y, width: bBox.width, height: bBox.height });
     },
 
     _updateBoundingRect: function() {
@@ -280,7 +275,7 @@ extend(Title.prototype, require("./layout_element").LayoutElement.prototype, {
 
     changeLink: function(root) {
         this._group.linkRemove();
-        this._group.linkOn(root, { name: "title", after: "peripheral" });
+        this._group.linkOn(root, "title");
     }
     // BaseWidget_layout_implementation
 });

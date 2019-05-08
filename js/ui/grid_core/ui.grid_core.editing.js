@@ -70,6 +70,8 @@ var EDIT_FORM_CLASS = "edit-form",
 
     POINTER_EVENTS_TARGET_CLASS = "dx-pointer-events-target",
 
+    DEFAULT_START_EDIT_ACTION = "click",
+
     EDIT_MODES = [EDIT_MODE_BATCH, EDIT_MODE_ROW, EDIT_MODE_CELL, EDIT_MODE_FORM, EDIT_MODE_POPUP],
     ROW_BASED_MODES = [EDIT_MODE_ROW, EDIT_MODE_FORM, EDIT_MODE_POPUP],
     CELL_BASED_MODES = [EDIT_MODE_BATCH, EDIT_MODE_CELL],
@@ -411,7 +413,6 @@ var EditingController = modules.ViewController.inherit((function() {
                     buttons;
 
                 if(options.rowType === "data") {
-                    $container.css("textAlign", "center");
                     options.rtlEnabled = this.option("rtlEnabled");
                     buttons = this._getEditingButtons(options);
 
@@ -1492,6 +1493,7 @@ var EditingController = modules.ViewController.inherit((function() {
                 visible: isEditColumnVisible,
                 cssClass: cssClass,
                 width: "auto",
+                alignment: "center",
                 cellTemplate: that._getEditCommandCellTemplate(),
                 fixedPosition: "right"
             });
@@ -2052,8 +2054,11 @@ var EditingController = modules.ViewController.inherit((function() {
             return allowEditAction;
         },
 
-        allowUpdating: function(options) {
-            return this._allowEditAction("allowUpdating", options);
+        allowUpdating: function(options, eventName) {
+            let startEditAction = this.option("editing.startEditAction") || DEFAULT_START_EDIT_ACTION,
+                needCallback = arguments.length > 1 ? startEditAction === eventName : true;
+
+            return needCallback && this._allowEditAction("allowUpdating", options);
         },
 
         allowDeleting: function(options) {
@@ -2594,12 +2599,12 @@ module.exports = {
                         $targetElement = $(e.event.target),
                         columnIndex = that._getColumnIndexByElement($targetElement),
                         row = that._dataController.items()[e.rowIndex],
-                        allowUpdating = editingController.allowUpdating({ row: row }) || row && row.inserted,
+                        allowUpdating = editingController.allowUpdating({ row: row }, eventName) || row && row.inserted,
                         column = that._columnsController.getVisibleColumns()[columnIndex],
                         allowEditing = column && (column.allowEditing || editingController.isEditCell(e.rowIndex, columnIndex)),
                         startEditAction = that.option("editing.startEditAction") || "click";
 
-                    if(eventName === "click" && startEditAction === "dblClick") {
+                    if(eventName === "click" && startEditAction === "dblClick" && !editingController.isEditCell(e.rowIndex, columnIndex)) {
                         editingController.closeEditCell();
                     }
 

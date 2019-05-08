@@ -2681,6 +2681,55 @@ QUnit.test("Batch mode - Closing edited cell should work on click when startEdit
     assert.strictEqual(getInputElements($testElement).length, 0, "hasn't input");
 });
 
+QUnit.test("Batch mode - Clicking on the edited cell should not close it when startEditAction is 'dblClick'", function(assert) {
+    // arrange
+    var that = this,
+        rowsView = this.rowsView,
+        $testElement = $("#container");
+
+    that.options.editing = {
+        allowUpdating: true,
+        mode: "batch",
+        startEditAction: "dblClick"
+    };
+    rowsView.render($testElement);
+
+    $testElement.find("td").first().trigger("dxdblclick");
+
+    // assert
+    assert.strictEqual(getInputElements($testElement).length, 1, "has input");
+    assert.strictEqual($testElement.find("td").first().find("input").length, 1);
+
+    // act
+    $testElement.find("td").first().trigger("dxclick");
+    that.clock.tick();
+
+    // assert
+    assert.strictEqual(getInputElements($testElement).length, 1, "has input");
+});
+
+QUnit.test("Batch mode - The allowUpdating callback should not be called on click when startEditAction is 'dblClick'", function(assert) {
+    // arrange
+    var that = this,
+        rowsView = this.rowsView,
+        $testElement = $("#container"),
+        allowUpdating = sinon.spy();
+
+    that.options.editing = {
+        allowUpdating: allowUpdating,
+        mode: "batch",
+        startEditAction: "dblClick"
+    };
+    rowsView.render($testElement);
+    allowUpdating.reset();
+
+    // act
+    $testElement.find("td").first().trigger("click");
+
+    // assert
+    assert.strictEqual(allowUpdating.callCount, 0, "allowUpdating isn't called");
+});
+
 QUnit.module('Editing with real dataController', {
     beforeEach: function() {
         this.clock = sinon.useFakeTimers();
@@ -2720,7 +2769,7 @@ QUnit.module('Editing with real dataController', {
             }
         };
 
-        setupDataGridModules(this, ['data', 'columns', 'rows', 'gridView', 'masterDetail', 'editing', 'editorFactory', 'selection', 'headerPanel', 'columnFixing', 'validating', 'search'], {
+        setupDataGridModules(this, ['data', 'columns', 'columnHeaders', 'rows', 'gridView', 'masterDetail', 'editing', 'editorFactory', 'selection', 'headerPanel', 'columnFixing', 'validating', 'search'], {
             initViews: true
         });
 
@@ -7366,6 +7415,38 @@ QUnit.test("Load panel should be hidden when changing loadPanel.enabled while lo
     } finally {
         fx.off = false;
     }
+});
+
+// T737789
+QUnit.test("The command column caption should be applied", function(assert) {
+    // arrange
+    var that = this,
+        $commandCellElement,
+        columnHeadersView = that.columnHeadersView,
+        $testElement = $('#container');
+
+    that.options.showColumnHeaders = true;
+    that.options.editing = {
+        mode: "row",
+        allowUpdating: true,
+        allowDeleting: true
+    };
+    that.options.columns.push({
+        type: "buttons",
+        caption: "Command Column",
+        alignment: "right",
+        buttons: ["edit", "delete"]
+    });
+    that.columnsController.reset();
+
+    // act
+    columnHeadersView.render($testElement);
+
+    // assert
+    $commandCellElement = $(columnHeadersView.getCellElement(0, 5));
+    assert.ok($commandCellElement.hasClass("dx-command-edit"), "has command column");
+    assert.strictEqual($commandCellElement.text(), "Command Column", "caption");
+    assert.strictEqual($commandCellElement.css("textAlign"), "right", "alignment");
 });
 
 

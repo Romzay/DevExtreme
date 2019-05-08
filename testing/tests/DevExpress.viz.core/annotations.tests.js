@@ -1072,25 +1072,6 @@ QUnit.test("Draw plague bound text bbox if it greater than passed size", functio
 
 QUnit.module("Tooltip", environment);
 
-QUnit.test("Get tooltip params", function(assert) {
-    const annotation = createAnnotations([{ x: 0, y: 0, type: "image", image: { url: "some_url" } }], {})[0];
-
-    annotation.draw(this.widget, this.group);
-
-    // assert
-    assert.deepEqual(annotation.getTooltipParams(), { x: 100, y: 200 });
-});
-
-QUnit.test("Get tooltip format object", function(assert) {
-    const items = [{ x: 0, y: 0, opt_1: "opt_1", type: "image", image: { url: "some_url" }, description: "item_desc" }];
-    const annotation = createAnnotations(items, {})[0];
-
-    annotation.draw(this.widget, this.group);
-
-    // assert
-    assert.deepEqual(annotation.getTooltipFormatObject(), $.extend({ valueText: "item_desc" }, items[0]));
-});
-
 QUnit.test("customizeTooltip in item", function(assert) {
     const customizeTooltip = function() { return 2; };
     const items = [{ x: 0, y: 0, opt_1: "opt_1", type: "image", image: { url: "some_url" }, customizeTooltip }];
