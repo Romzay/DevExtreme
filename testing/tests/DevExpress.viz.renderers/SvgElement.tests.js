@@ -332,7 +332,7 @@ function checkDashStyle(assert, elem, result, style, value) {
         // assert
         assert.equal(result, elem);
         assert.deepEqual(elem.attr.callCount, 1);
-        assert.deepEqual(elem.attr.firstCall.args, [{ sharp: true }]);
+        assert.deepEqual(elem.attr.firstCall.args, [{ sharp: true, sharpDirection: undefined }]);
     });
 
     QUnit.test("Sharp with parameter", function(assert) {
@@ -345,12 +345,12 @@ function checkDashStyle(assert, elem, result, style, value) {
         elem.attr = sinon.spy(function() { return this; });
 
         // act
-        result = elem.sharp("h");
+        result = elem.sharp("h", -1);
 
         // assert
         assert.equal(result, elem);
         assert.deepEqual(elem.attr.callCount, 1);
-        assert.deepEqual(elem.attr.firstCall.args, [{ sharp: "h" }]);
+        assert.deepEqual(elem.attr.firstCall.args, [{ sharp: "h", sharpDirection: -1 }]);
     });
 
     QUnit.test("Data, object", function(assert) {
@@ -4736,10 +4736,14 @@ function checkDashStyle(assert, elem, result, style, value) {
             assert.strictEqual(text.element.tagName, "text", "tag name");
             assert.equal(text.element.getAttribute("x"), position.x, "x attribute");
             assert.equal(text.element.getAttribute("y"), position.y, "y attribute");
-            assert.strictEqual(text.element.childNodes.length, 1, "child nodes count");
-            assert.strictEqual(text.element.childNodes[0].nodeName, "#text", "child is text node");
-            assert.strictEqual(text.element.childNodes[0].wholeText, expected.text, "text of the #text node");
-            assert.strictEqual(text.element.textContent, expected.text, "text content");
+            if(expected) {
+                assert.strictEqual(text.element.childNodes.length, 1, "child nodes count");
+                assert.strictEqual(text.element.childNodes[0].nodeName, "#text", "child is text node");
+                assert.strictEqual(text.element.childNodes[0].wholeText, expected.text, "text of the #text node");
+                assert.strictEqual(text.element.textContent, expected.text, "text content");
+            } else {
+                assert.strictEqual(text.element.childNodes.length, 0, "child nodes count");
+            }
         },
         checkTspans: function(assert, text, expectedData, position, strokeData) {
             assert.strictEqual(text.element.tagName, "text", "tag name");
@@ -5778,7 +5782,7 @@ function checkDashStyle(assert, elem, result, style, value) {
             result = text.setMaxSize(110, undefined, {
                 wordWrap: "normal"
             });
-            assert.deepEqual(result, { rowCount: 5, textChanged: true });
+            assert.deepEqual(result, { rowCount: 5, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "There is test" },
@@ -5801,7 +5805,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "clip"
             });
 
-            assert.deepEqual(result, { rowCount: 1, textChanged: true });
+            assert.deepEqual(result, { rowCount: 1, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "longlonglonglonglong" },
@@ -5819,7 +5823,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 wordWrap: "word-break"
             });
 
-            assert.deepEqual(result, { rowCount: 2, textChanged: true });
+            assert.deepEqual(result, { rowCount: 2, textChanged: true, textIsEmpty: false });
 
             assert.equal(text.element.textContent, "longlonglonglonglonglonglong");
             assert.equal(text.element.childNodes.length, 2);
@@ -5837,7 +5841,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "clip"
             });
 
-            assert.deepEqual(result, { rowCount: 3, textChanged: true });
+            assert.deepEqual(result, { rowCount: 3, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "long" },
@@ -5860,7 +5864,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 3, textChanged: true });
+            assert.deepEqual(result, { rowCount: 3, textChanged: true, textIsEmpty: false });
 
             assert.ok(text.element.childNodes[1].textContent.indexOf("...") !== -1);
 
@@ -5877,7 +5881,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "hide"
             });
 
-            assert.deepEqual(result, { rowCount: 0, textChanged: true });
+            assert.deepEqual(result, { rowCount: 0, textChanged: true, textIsEmpty: true });
             assert.equal(text.getBBox().width, 0);
         });
 
@@ -5890,7 +5894,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 wordWrap: "normal"
             });
 
-            assert.deepEqual(result, { rowCount: 4, textChanged: true });
+            assert.deepEqual(result, { rowCount: 4, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "There is test text" },
@@ -5912,7 +5916,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 1, textChanged: true });
+            assert.deepEqual(result, { rowCount: 1, textChanged: true, textIsEmpty: false });
 
             assert.ok(text.element.textContent.indexOf("...") > 0);
             assert.equal(text.element.childNodes.length, 1);
@@ -5930,7 +5934,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 5, textChanged: true });
+            assert.deepEqual(result, { rowCount: 5, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "There " },
@@ -5959,7 +5963,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 1, textChanged: true });
+            assert.deepEqual(result, { rowCount: 1, textChanged: true, textIsEmpty: false });
 
             assert.equal(text.element.childNodes.length, 1);
         });
@@ -5986,7 +5990,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 2, textChanged: true });
+            assert.deepEqual(result, { rowCount: 2, textChanged: true, textIsEmpty: false });
 
             assert.equal(text.element.childNodes.length, 2);
         });
@@ -6003,7 +6007,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 wordWrap: "normal"
             });
 
-            assert.deepEqual(result, { rowCount: 4, textChanged: true });
+            assert.deepEqual(result, { rowCount: 4, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "There is test text" },
@@ -6026,7 +6030,7 @@ function checkDashStyle(assert, elem, result, style, value) {
                 textOverflow: "ellipsis"
             });
 
-            assert.deepEqual(result, { rowCount: 1, textChanged: true });
+            assert.deepEqual(result, { rowCount: 1, textChanged: true, textIsEmpty: false });
 
             this.checkTspans(assert, text, [
                 { x: 35, y: 100, text: "..." }
@@ -6144,6 +6148,80 @@ function checkDashStyle(assert, elem, result, style, value) {
                 { x: 35, y: 100, text: "Text" },
                 { x: 35, dy: 12, text: "Text Text Text 1..." },
             ], { x: 35, y: 100 });
+        });
+
+        // T732389
+        QUnit.test("textOverflow hide. Can apply x attr on hidden text", function(assert) {
+            var text = this.createText().append(this.svg).attr({
+                x: 35, y: 100, fill: "black",
+                text: "There is test text for checking ellipsis with single line"
+            });
+
+            this.prepareRenderBeforeEllipsis();
+            text.setMaxSize(110, 20, {
+                wordWrap: "normal",
+                textOverflow: "hide"
+            });
+
+            text.attr({ x: 45 });
+            this.checkSimple(assert, text, undefined, { x: 45, y: 100 });
+        });
+
+        QUnit.test("setMaxWidth with width that is less then zero", function(assert) {
+            var text = this.createText().append(this.svg).attr({ x: 35, y: 100, fill: "black", stroke: "black", text: "Text" });
+
+            this.prepareRenderBeforeEllipsis();
+
+            text.setMaxSize(-1, undefined, {
+                wordWrap: "none",
+                textOverflow: "ellipsis"
+            });
+
+            assert.equal(text.element.textContent, "...");
+        });
+
+        QUnit.test("Can hide ellipsis if maxWidth too small", function(assert) {
+            var text = this.createText().append(this.svg).attr({ x: 35, y: 100, fill: "black", stroke: "black", text: "Text" });
+
+            this.prepareRenderBeforeEllipsis();
+
+            text.setMaxSize(-1, undefined, {
+                wordWrap: "none",
+                textOverflow: "ellipsis",
+                hideOverflowEllipsis: true
+            });
+
+            assert.equal(text.element.textContent, "");
+        });
+
+        QUnit.test("Do not hide ellipsis if maxWidth is enought to dispay it", function(assert) {
+            var text = this.createText().append(this.svg).attr({ x: 35, y: 100, fill: "black", stroke: "black", text: "Text Text Text Text" });
+
+            this.prepareRenderBeforeEllipsis();
+
+            text.setMaxSize(60, undefined, {
+                wordWrap: "none",
+                textOverflow: "ellipsis",
+                hideOverflowEllipsis: true
+            });
+
+            assert.ok(text.element.textContent.indexOf, "..." > 0);
+        });
+
+        QUnit.test("Hide ellipsis string in multiple line text with height limit", function(assert) {
+            var text = this.createText().append(this.svg).attr({
+                x: 35, y: 100, fill: "black",
+                text: "There\nis\ntest\ntext\nfor checking ellipsis with single line"
+            });
+
+            this.prepareRenderBeforeEllipsis();
+            text.setMaxSize(10, 25, {
+                wordWrap: "none",
+                textOverflow: "ellipsis",
+                hideOverflowEllipsis: true
+            });
+
+            assert.equal(text.element.textContent, "");
         });
     }
 })();

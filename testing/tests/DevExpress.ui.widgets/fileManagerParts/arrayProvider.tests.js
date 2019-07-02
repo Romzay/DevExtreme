@@ -2,6 +2,7 @@ const { test } = QUnit;
 
 import "ui/file_manager";
 import ArrayFileProvider from "ui/file_manager/file_provider/array";
+import { ErrorCode } from "ui/file_manager/ui.file_manager.common";
 
 const moduleConfig = {
 
@@ -10,15 +11,15 @@ const moduleConfig = {
             data: [
                 {
                     name: "F1",
-                    isFolder: true,
+                    isDirectory: true,
                     items: [
                         {
                             name: "F1.1",
-                            isFolder: true
+                            isDirectory: true
                         },
                         {
                             name: "F1.2",
-                            isFolder: true,
+                            isDirectory: true,
                             items: [
                                 {
                                     name: "File1.2.txt"
@@ -27,11 +28,11 @@ const moduleConfig = {
                         },
                         {
                             name: "F1.3",
-                            isFolder: true,
+                            isDirectory: true,
                             items: [
                                 {
                                     name: "F1.3.1",
-                                    isFolder: true
+                                    isDirectory: true
                                 }
                             ]
                         }
@@ -39,7 +40,7 @@ const moduleConfig = {
                 },
                 {
                     name: "F2",
-                    isFolder: true
+                    isDirectory: true
                 }
             ]
         };
@@ -84,6 +85,60 @@ QUnit.module("Array File Provider", moduleConfig, () => {
         folders = this.provider.getFolders();
         assert.equal(folders.length, 1);
         assert.ok(folders[0].hasSubDirs);
+    });
+
+    test("throw error when try moving folder with incorrect parameters", function(assert) {
+        let errorCount = 0;
+        let lastErrorId = -1;
+        let folders = this.provider.getFolders();
+
+        try {
+            this.provider.moveItems([ folders[0] ], folders[0]);
+        } catch(e) {
+            errorCount++;
+            lastErrorId = e.errorId;
+        }
+        assert.equal(folders[0].name, "F1");
+        assert.equal(errorCount, 1);
+        assert.equal(lastErrorId, ErrorCode.Other);
+
+        let subFolders = this.provider.getFolders("F1");
+        try {
+            this.provider.moveItems([ subFolders[0] ], subFolders[0]);
+        } catch(e) {
+            errorCount++;
+            lastErrorId = e.errorId;
+        }
+        assert.equal(subFolders[0].name, "F1.1");
+        assert.equal(errorCount, 2);
+        assert.equal(lastErrorId, ErrorCode.Other);
+    });
+
+    test("throw error when try copying folder with incorrect parameters", function(assert) {
+        let errorCount = 0;
+        let lastErrorId = -1;
+        let folders = this.provider.getFolders();
+
+        try {
+            this.provider.copyItems([ folders[0] ], folders[0]);
+        } catch(e) {
+            errorCount++;
+            lastErrorId = e.errorId;
+        }
+        assert.equal(folders[0].name, "F1");
+        assert.equal(errorCount, 1);
+        assert.equal(lastErrorId, ErrorCode.Other);
+
+        let subFolders = this.provider.getFolders("F1");
+        try {
+            this.provider.copyItems([ subFolders[0] ], subFolders[0]);
+        } catch(e) {
+            errorCount++;
+            lastErrorId = e.errorId;
+        }
+        assert.equal(subFolders[0].name, "F1.1");
+        assert.equal(errorCount, 2);
+        assert.equal(lastErrorId, ErrorCode.Other);
     });
 
 });

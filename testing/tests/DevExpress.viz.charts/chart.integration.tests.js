@@ -1574,14 +1574,67 @@ QUnit.test("reject selection after options updating", function(assert) {
     assert.strictEqual(chart.getAllSeries()[0].getAllPoints()[0].isSelected(), false);
 });
 
+QUnit.module("Legend title", $.extend({}, moduleSetup, {
+    beforeEach: function() {
+        moduleSetup.beforeEach.call(this);
+
+        this.options = {
+            dataSource: [{ arg: 1, val: -0.25, val1: 9.75 }, { arg: 2, val: 10.2, val1: 1.9 }],
+            series: [
+                { name: "seriesseriesseriesseriesseries" },
+                { valueField: "val1", name: "series1" }
+            ],
+            legend: {
+                title: {
+                    text: "Super title",
+                    margin: 10
+                }
+            }
+        };
+    },
+    createChart: function(options) {
+        return moduleSetup.createChart.call(this, $.extend(true, {}, this.options, options));
+    }
+}));
+
+QUnit.test("check default horizontal alignment(left)", function(assert) {
+    var chart = this.createChart({});
+    assert.equal(chart._legend._title._group._settings.translateX, 10);
+});
+
+QUnit.test("check horizontal alignment === center", function(assert) {
+    var chart = this.createChart({
+        legend: {
+            title: {
+                horizontalAlignment: "center",
+                margin: {
+                    left: 40,
+                    right: 100
+                }
+            }
+        }
+    });
+    assert.roughEqual(chart._legend._title._group._settings.translateX, 80, 5);
+    assert.roughEqual(chart._legend._insideLegendGroup._settings.translateX, 370, 5);
+});
+
 QUnit.module("Auto hide point markers", $.extend({}, moduleSetup, {
     beforeEach: function() {
         moduleSetup.beforeEach.call(this);
         var dataSource = [];
         for(var i = 0; i < 500000; i += 250) {
+            var y1_rand = Math.random();
+            var y2_rand = Math.random();
+
             dataSource.push({
-                x: i,
-                y: Math.random() * 10 - Math.random() * 5
+                arg: i,
+                date: new Date(i),
+                val: y1_rand * 10 - y2_rand * 5,
+                val1: y1_rand * 10.5 - y2_rand * 5,
+                low: y1_rand * 10 - y2_rand * 8,
+                open: y1_rand * 10 - y2_rand * 6,
+                close: y1_rand * 10 - y2_rand * 4,
+                high: y1_rand * 10 - y2_rand * 2
             });
         }
 
@@ -1594,8 +1647,6 @@ QUnit.module("Auto hide point markers", $.extend({}, moduleSetup, {
                 visualRange: [30000, 400000]
             },
             series: [{
-                argumentField: "x",
-                valueField: "y",
                 point: { size: 14 }
             }]
         };
@@ -1626,6 +1677,43 @@ QUnit.test("auto switching point markers visibility is disabled for non-line/are
     });
 
     assert.ok(chart.getAllSeries()[0].getVisiblePoints()[0].graphic);
+});
+
+QUnit.test("bar series are not used to define autoHiding", function(assert) {
+    var chart = this.createChart({
+        size: {
+            width: 820,
+            height: 440
+        },
+        argumentAxis: {
+            visualRange: [10000, 100000]
+        },
+        series: [
+            { type: "bar" },
+            { type: "line", valueField: "val1" }
+        ]
+    });
+
+    assert.ok(chart.getAllSeries()[1].getVisiblePoints()[0].graphic);
+});
+
+QUnit.test("financial series are not used to define autoHiding", function(assert) {
+    var chart = this.createChart({
+        size: {
+            width: 820,
+            height: 440
+        },
+        argumentAxis: {
+            visualRange: [new Date(10000), new Date(89000)]
+        },
+        commonSeriesSettings: { argumentField: "date" },
+        series: [
+            { type: "candlestick" },
+            { type: "line", valueField: "val1" }
+        ]
+    });
+
+    assert.ok(chart.getAllSeries()[1].getVisiblePoints()[0].graphic);
 });
 
 QUnit.test("show hovered point (points are hidden automatically)", function(assert) {

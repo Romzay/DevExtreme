@@ -1,6 +1,7 @@
-var $ = require("jquery"),
-    themes = require("ui/themes"),
-    dateLocalization = require("localization/date");
+import $ from "jquery";
+import themes from "ui/themes";
+import dateLocalization from "localization/date";
+import { SchedulerTestWrapper } from './helpers.js';
 
 QUnit.testStart(function() {
     $("#qunit-fixture").html(
@@ -9,28 +10,31 @@ QUnit.testStart(function() {
             </div>');
 });
 
-require("common.css!");
-require("generic_light.css!");
+import "common.css!";
+import "generic_light.css!";
 
 
-var eventsEngine = require("events/core/events_engine"),
-    renderer = require("core/renderer"),
-    fx = require("animation/fx"),
-    pointerMock = require("../../helpers/pointerMock.js"),
-    dragEvents = require("events/drag"),
-    CustomStore = require("data/custom_store"),
-    isRenderer = require("core/utils/type").isRenderer,
-    config = require("core/config");
+import eventsEngine from "events/core/events_engine";
+import renderer from "core/renderer";
+import fx from "animation/fx";
+import pointerMock from "../../helpers/pointerMock.js";
+import dragEvents from "events/drag";
+import CustomStore from "data/custom_store";
+import { isRenderer } from "core/utils/type";
+import config from "core/config";
 
-require("ui/scheduler/ui.scheduler");
+import "ui/scheduler/ui.scheduler";
 
-var DATE_TABLE_CELL_BORDER = 1;
+import { dateToMilliseconds as toMs } from "core/utils/date";
+
+const DATE_TABLE_CELL_BORDER = 1;
 
 QUnit.module("Integration: Work space", {
     beforeEach: function() {
         fx.off = true;
         this.createInstance = function(options) {
             this.instance = $("#scheduler").dxScheduler($.extend(options, { maxAppointmentsPerCell: null })).dxScheduler("instance");
+            this.scheduler = new SchedulerTestWrapper(this.instance);
         };
     },
     afterEach: function() {
@@ -1823,4 +1827,22 @@ QUnit.test("Vertical scrollable should work after switching currentDate if allDa
     var $scroll = this.instance.$element().find(".dx-scrollbar-vertical").eq(1);
 
     assert.notEqual($scroll.css("display"), "none", "ok");
+});
+
+QUnit.test("Current time indicator calculates position correctly with workWeek view (T750252)", function(assert) {
+    this.createInstance({
+        dataSource: [],
+        views: [
+            { name: "2 Work Weeks", type: "workWeek", intervalCount: 2, startDate: new Date(Date.now() - 5 * toMs("day")) },
+        ],
+        currentView: "workWeek",
+        currentDate: new Date(),
+        height: 580
+    });
+
+
+    let $dateTimeIndicator = this.scheduler.workSpace.getCurrentTimeIndicator()[0];
+    const position = { top: $dateTimeIndicator.style.top, left: $dateTimeIndicator.style.left };
+
+    assert.notEqual(position, { left: 0, top: 0 }, "Current time indicator positioned correctly");
 });

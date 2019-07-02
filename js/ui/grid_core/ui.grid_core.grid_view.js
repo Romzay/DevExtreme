@@ -456,7 +456,7 @@ var ResizingController = modules.ViewController.inherit({
             }
         }
 
-        return Math.round(result);
+        return result;
     },
 
     updateSize: function($rootElement) {
@@ -533,7 +533,7 @@ var ResizingController = modules.ViewController.inherit({
         let groupElement = this.component.$element().children().get(0),
             scrollable = this._rowsView.getScrollable();
 
-        if(groupElement.style.height && (!scrollable || !scrollable.scrollTop())) {
+        if(groupElement && groupElement.style.height && (!scrollable || !scrollable.scrollTop())) {
             groupElement.style.height = "";
         }
     },

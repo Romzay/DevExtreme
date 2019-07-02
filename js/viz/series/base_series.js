@@ -59,21 +59,7 @@ seriesNS.mixins = {
     polar: {}
 };
 
-seriesNS.mixins.chart.scatter = _extend({}, scatterSeries.chart, {
-    usePointsToDefineAutoHiding() {
-        return true;
-    },
-
-    checkSeriesViewportCoord(axis, coord) {
-        return true;
-    },
-
-    getSeriesPairCoord(coord, isArgument) {
-        return bubbleSeries.chart["bubble"].getShapePairCoord.call(this, coord, isArgument, () => {
-            return this._options.point.size / 2;
-        });
-    }
-});
+seriesNS.mixins.chart.scatter = scatterSeries.chart;
 seriesNS.mixins.polar.scatter = scatterSeries.polar;
 
 _extend(seriesNS.mixins.pie, pieSeries);
@@ -337,6 +323,8 @@ Series.prototype = {
         that.barOverlapGroup = newOptions.barOverlapGroup;
 
         that._createGroups();
+
+        that._processEmptyValue = newOptions.ignoreEmptyPoints ? x => x === null ? undefined : x : x => x;
     },
 
     _defineDrawingState() {
@@ -425,13 +413,9 @@ Series.prototype = {
         return aggregation && aggregation.enabled;
     },
 
-    autoHidePointMarkersEnabled() {
-        return false;
-    },
+    autoHidePointMarkersEnabled: _noop,
 
-    usePointsToDefineAutoHiding() {
-        return this.autoHidePointMarkersEnabled();
-    },
+    usePointsToDefineAutoHiding: _noop,
 
     createPoints(useAllAggregatedPoints) {
         this._normalizeUsingAllAggregatedPoints(useAllAggregatedPoints);

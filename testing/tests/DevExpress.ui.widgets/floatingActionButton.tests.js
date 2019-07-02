@@ -124,11 +124,21 @@ QUnit.module("create multiple actions", (hooks) => {
     });
 });
 
-
 QUnit.module("modify global action button config", (hooks) => {
     hooks.afterEach(() => {
         $("#fab-one").dxSpeedDialAction("instance").dispose();
         $("#fab-two").dxSpeedDialAction("instance").dispose();
+
+        config({
+            floatingActionButtonConfig: {
+                position: {
+                    at: "right bottom",
+                    my: "right bottom",
+                    offset: "-16 -16"
+                }
+            }
+        });
+
     }),
 
     test("check main fab rendering", (assert) => {
@@ -165,6 +175,29 @@ QUnit.module("modify global action button config", (hooks) => {
         const $fabMainContentIcons = $fabMainElement.find(".dx-icon");
         assert.equal($fabMainContent.find(".dx-icon-add").length, 1, "default icon is 'add'");
         assert.equal($fabMainContentIcons.length, 2, "only two icons rendered on the main button");
+    });
+
+    test("check main fab position after change", (assert) => {
+        var firstSDA = $("#fab-one").dxSpeedDialAction().dxSpeedDialAction("instance");
+        $("#fab-two").dxSpeedDialAction();
+
+        const $fabMainElement = $("." + FAB_MAIN_CLASS);
+        const $fabMainContent = $fabMainElement.find(".dx-overlay-content");
+        const fabDimensions = 64;
+
+        assert.equal($fabMainContent.offset().top, $(window).height() - fabDimensions, "default position top");
+        assert.equal($fabMainContent.offset().left, $(window).width() - fabDimensions, "default position left");
+
+        config({
+            floatingActionButtonConfig: {
+                position: "left top"
+            }
+        });
+
+        firstSDA.repaint();
+
+        assert.equal($fabMainContent.offset().top, 0, "default position top is changed");
+        assert.equal($fabMainContent.offset().left, 0, "default position left is changed");
     });
 });
 
@@ -209,7 +242,6 @@ QUnit.module("add or remove action buttons", (hooks) => {
         assert.equal($fabMainContent.offset().top, $(window).height() - fabMainOffsetY - $fabMainContent.height(), "use dafault position");
     });
 });
-
 
 QUnit.module("check action buttons position", (hooks) => {
     hooks.afterEach(() => {

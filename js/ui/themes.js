@@ -12,6 +12,7 @@ var $ = require("../core/renderer"),
     viewPortUtils = require("../core/utils/view_port"),
     themeReadyCallback = require("./themes_callback"),
     viewPort = viewPortUtils.value,
+    Promise = require("../core/polyfills/promise"),
     viewPortChanged = viewPortUtils.changeCallback;
 
 var DX_LINK_SELECTOR = "link[rel=dx-theme]",
@@ -241,9 +242,12 @@ function current(options) {
 function themeNameFromDevice(device) {
     var themeName = device.platform;
 
-
-    if(themeName === "ios") {
-        themeName += "7";
+    switch(themeName) {
+        case "ios":
+            return "ios7";
+        case "android":
+        case "win":
+            return "generic";
     }
 
     return themeName;
@@ -328,6 +332,60 @@ function checkThemeDeprecation() {
     }
 }
 
+function isWebFontLoaded(text, fontWeight) {
+    const testedFont = "Roboto, RobotoFallback, Arial";
+    const etalonFont = "Arial";
+
+    const document = domAdapter.getDocument();
+    const testElement = document.createElement("span");
+
+    testElement.style.position = "absolute";
+    testElement.style.top = "-9999px";
+    testElement.style.left = "-9999px";
+    testElement.style.visibility = "hidden";
+    testElement.style.fontFamily = etalonFont;
+    testElement.style.fontSize = "250px";
+    testElement.style.fontWeight = fontWeight;
+    testElement.innerHTML = text;
+
+    document.body.appendChild(testElement);
+
+    const etalonFontWidth = testElement.offsetWidth;
+    testElement.style.fontFamily = testedFont;
+    const testedFontWidth = testElement.offsetWidth;
+
+    testElement.parentNode.removeChild(testElement);
+
+    return etalonFontWidth !== testedFontWidth;
+}
+
+function waitWebFont(text, fontWeight) {
+    const timeout = 15;
+    const attempts = 135;
+    let i = 0;
+
+    return new Promise((resolve, reject) => {
+        const check = () => {
+            const loaded = isWebFontLoaded(text, fontWeight);
+            loaded && resolve();
+            return loaded;
+        };
+
+        const runCheck = () => {
+            if(i++ > attempts) {
+                resolve();
+                return;
+            }
+
+            setTimeout(() => {
+                check() || runCheck();
+            }, timeout);
+        };
+
+        check() || runCheck();
+    });
+}
+
 var initDeferred = new Deferred();
 
 function autoInit() {
@@ -398,6 +456,8 @@ exports.waitForThemeLoad = waitForThemeLoad;
 exports.isMaterial = isMaterial;
 exports.isIos7 = isIos7;
 exports.isGeneric = isGeneric;
+exports.isWebFontLoaded = isWebFontLoaded;
+exports.waitWebFont = waitWebFont;
 
 
 exports.resetTheme = function() {

@@ -1,6 +1,6 @@
 import { smartFormatter as _format, formatRange } from "./smart_formatter";
 import vizUtils from "../core/utils";
-import { isDefined, isFunction, isPlainObject, isNumeric } from "../../core/utils/type";
+import { isDefined, isFunction, isPlainObject, isNumeric, type } from "../../core/utils/type";
 import constants from "./axes_constants";
 import { extend } from "../../core/utils/extend";
 import { inArray } from "../../core/utils/array";
@@ -256,6 +256,10 @@ function convertVisualRangeObject(visualRange, optionValue) {
     return vizUtils.convertVisualRangeObject(visualRange, !_isArray(optionValue));
 }
 
+function getConstantLineSharpDirection(coord, axisCanvas) {
+    return Math.max(axisCanvas.start, axisCanvas.end) !== coord ? 1 : -1;
+}
+
 const Axis = exports.Axis = function(renderSettings) {
     var that = this;
 
@@ -285,8 +289,8 @@ const Axis = exports.Axis = function(renderSettings) {
 Axis.prototype = {
     constructor: Axis,
 
-    _drawAxis: function() {
-        var options = this._options;
+    _drawAxis() {
+        const options = this._options;
 
         if(!options.visible) {
             return;
@@ -296,22 +300,38 @@ Axis.prototype = {
         this._updateAxisElementPosition();
 
         this._axisElement.attr({ "stroke-width": options.width, stroke: options.color, "stroke-opacity": options.opacity })
-            .sharp(this._getSharpParam(true))
+            .sharp(this._getSharpParam(true), this.getAxisSharpDirection())
             .append(this._axisLineGroup);
     },
 
-    _createPathElement: function(points, attr) {
-        return this._renderer.path(points, "line").attr(attr).sharp(this._getSharpParam());
+    _createPathElement(points, attr, sharpDirection) {
+        return this.sharp(this._renderer.path(points, "line").attr(attr), sharpDirection);
     },
 
-    _getGridLineDrawer: function(borderOptions) {
+    sharp(svgElement, sharpDirection = 1) {
+        return svgElement.sharp(this._getSharpParam(), sharpDirection);
+    },
+
+    getAxisSharpDirection() {
+        const position = this._options.position;
+        return position === TOP || position === LEFT ? 1 : -1;
+    },
+
+    getSharpDirectionByCoords(coords) {
+        const canvas = this._getCanvasStartEnd();
+        const maxCoord = Math.max(canvas.start, canvas.end);
+
+        return this.getRadius ? 0 : (maxCoord !== coords[(this._isHorizontal ? "x" : "y")] ? 1 : -1);
+    },
+
+    _getGridLineDrawer: function() {
         var that = this;
 
         return function(tick, gridStyle) {
             var grid = that._getGridPoints(tick.coords);
 
             if(grid.points) {
-                return that._createPathElement(grid.points, gridStyle);
+                return that._createPathElement(grid.points, gridStyle, that.getSharpDirectionByCoords(tick.coords));
             }
             return null;
         };
@@ -374,7 +394,7 @@ Axis.prototype = {
     },
 
     _createConstantLine: function(value, attr) {
-        return this._createPathElement(this._getConstantLineGraphicAttributes(value).points, attr);
+        return this._createPathElement(this._getConstantLineGraphicAttributes(value).points, attr, getConstantLineSharpDirection(value, this._getCanvasStartEnd()));
     },
 
     _drawConstantLineLabelText: function(text, x, y, constantLineLabelOptions, group) {
@@ -719,8 +739,10 @@ Axis.prototype = {
             constantLineUnderSeries = that._axisConstantLineGroups.under,
             boxes = [that._axisElementsGroup,
                 constantLineAboveSeries.outside1, constantLineAboveSeries.outside2,
-                constantLineUnderSeries.outside1, constantLineUnderSeries.outside2]
-                .map(function(group) { return group && group.getBBox(); })
+                constantLineUnderSeries.outside1, constantLineUnderSeries.outside2,
+                that._axisLineGroup
+            ]
+                .map(group => group && group.getBBox())
                 .concat((function(group) {
                     var box = group && group.getBBox();
 
@@ -926,6 +948,10 @@ Axis.prototype = {
         return this._canvas;
     },
 
+    getAxisShift() {
+        return this._axisShift || 0;
+    },
+
     hideTitle: function() {
         var that = this;
 
@@ -1032,7 +1058,7 @@ Axis.prototype = {
     _getVisualRangeUpdateMode(viewport, newRange, oppositeValue) {
         let value = this._options.visualRangeUpdateMode;
         const translator = this._translator;
-        const range = translator.getBusinessRange();
+        const range = this._seriesData;
 
         if(this.isArgumentAxis) {
             if([SHIFT, KEEP, RESET].indexOf(value) === -1) {
@@ -1080,7 +1106,7 @@ Axis.prototype = {
         return value;
     },
 
-    _handleBusinessRangeChanged(oppositeVisualRangeUpdateMode, axisReinitialized) {
+    _handleBusinessRangeChanged(oppositeVisualRangeUpdateMode, axisReinitialized, newRange) {
         const that = this;
         const visualRange = this.visualRange();
 
@@ -1088,7 +1114,7 @@ Axis.prototype = {
             return;
         }
 
-        let visualRangeUpdateMode = that._lastVisualRangeUpdateMode = that._getVisualRangeUpdateMode(visualRange, that._seriesData, oppositeVisualRangeUpdateMode);
+        let visualRangeUpdateMode = that._lastVisualRangeUpdateMode = that._getVisualRangeUpdateMode(visualRange, newRange, oppositeVisualRangeUpdateMode);
         if(!that.isArgumentAxis) {
             const viewport = that.getViewport();
             if(!isDefined(viewport.startValue) &&
@@ -1153,9 +1179,9 @@ Axis.prototype = {
         const options = that._options;
         const isDiscrete = options.type === constants.discrete;
 
+        that._handleBusinessRangeChanged(oppositeVisualRangeUpdateMode, axisReinitialized, range);
         that._seriesData = new Range(range);
         const dataIsEmpty = that._seriesData.isEmpty();
-        that._handleBusinessRangeChanged(oppositeVisualRangeUpdateMode, axisReinitialized);
         that._prevDataWasEmpty = dataIsEmpty;
 
         that._seriesData.addRange({
@@ -1451,17 +1477,18 @@ Axis.prototype = {
         that._tickInterval = ticks.tickInterval;
         that._minorTickInterval = ticks.minorTickInterval;
 
-        const majorTicksByValues = (that._majorTicks || []).reduce((r, t) => {
+        const oldMajorTicks = that._majorTicks || [];
+        const majorTicksByValues = oldMajorTicks.reduce((r, t) => {
             r[t.value.valueOf()] = t;
             return r;
         }, {});
 
-
+        const sameType = type(ticks.ticks[0]) === type(oldMajorTicks[0] && oldMajorTicks[0].value);
         const skippedCategory = that._getSkippedCategory(ticks.ticks);
         const majorTicks = ticks.ticks.map(v => {
             const tick = majorTicksByValues[v.valueOf()];
-            delete majorTicksByValues[v.valueOf()];
-            if(tick) {
+            if(tick && sameType) {
+                delete majorTicksByValues[v.valueOf()];
                 tick.setSkippedCategory(skippedCategory);
                 return tick;
             } else {
@@ -1494,7 +1521,9 @@ Axis.prototype = {
         var that = this,
             translator = that._translator;
 
-        range.breaks = that._correctedBreaks;
+        if(that._correctedBreaks) {
+            range.breaks = that._correctedBreaks;
+        }
 
         if(that._isSynchronized) {
             return;
@@ -1552,6 +1581,7 @@ Axis.prototype = {
     },
 
     _calculateValueMargins(ticks) {
+        this._resetMargins();
         const that = this;
         const margins = that.getMarginOptions();
         const marginSize = (margins.size || 0) / 2;
@@ -1673,12 +1703,14 @@ Axis.prototype = {
         minPercentPadding = minPercentPadding === undefined ? minPadding / screenDeltaWithMargins : minPercentPadding;
         maxPercentPadding = maxPercentPadding === undefined ? maxPadding / screenDeltaWithMargins : maxPercentPadding;
 
-        if(this._translator.isInverted()) {
-            minValue = isDefined(minValue) ? minValue : translator.from(canvasStartEnd.start + screenDelta * minPercentPadding);
-            maxValue = isDefined(maxValue) ? maxValue : translator.from(canvasStartEnd.end - screenDelta * maxPercentPadding);
-        } else {
-            minValue = isDefined(minValue) ? minValue : translator.from(canvasStartEnd.start - screenDelta * minPercentPadding);
-            maxValue = isDefined(maxValue) ? maxValue : translator.from(canvasStartEnd.end + screenDelta * maxPercentPadding);
+        if(!isDiscrete) {
+            if(this._translator.isInverted()) {
+                minValue = isDefined(minValue) ? minValue : translator.from(canvasStartEnd.start + screenDelta * minPercentPadding, -1);
+                maxValue = isDefined(maxValue) ? maxValue : translator.from(canvasStartEnd.end - screenDelta * maxPercentPadding, 1);
+            } else {
+                minValue = isDefined(minValue) ? minValue : translator.from(canvasStartEnd.start - screenDelta * minPercentPadding, -1);
+                maxValue = isDefined(maxValue) ? maxValue : translator.from(canvasStartEnd.end + screenDelta * maxPercentPadding, 1);
+            }
         }
 
         function correctZeroLevel(minPoint, maxPoint) {
@@ -1736,6 +1768,7 @@ Axis.prototype = {
     },
 
     _resetMargins: function() {
+        this._reinitTranslator(this._getViewportRange());
         if(this._canvas) {
             this._translator.updateCanvas(this._processCanvas(this._canvas));
         }
@@ -2062,6 +2095,7 @@ Axis.prototype = {
     },
 
     setInitRange() {
+        this._initRange = {};
         if(Object.keys(this._options.wholeRange || {}).length === 0) {
             this._initRange = this.getZoomBounds();
         }

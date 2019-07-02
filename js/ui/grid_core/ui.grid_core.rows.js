@@ -207,6 +207,8 @@ module.exports = {
             * @type_function_param1_field13 isExpanded:boolean
             * @type_function_param1_field14 rowElement:dxElement
             * @type_function_param1_field15 handled:boolean
+            * @type_function_param1_field16 node:dxTreeListNode
+            * @type_function_param1_field17 level:number
             * @extends Action
             * @action
             */
@@ -440,6 +442,8 @@ module.exports = {
              * @type_function_param1_field10 isSelected:boolean
              * @type_function_param1_field11 isExpanded:boolean
              * @type_function_param1_field12 rowElement:dxElement
+             * @type_function_param1_field13 node:dxTreeListNode
+             * @type_function_param1_field14 level:number
              * @extends Action
              * @action
              */
@@ -1133,21 +1137,22 @@ module.exports = {
 
                 updateFreeSpaceRowHeight: function($table) {
                     var that = this,
-                        itemCount = that._dataController.items().length,
+                        dataController = that._dataController,
+                        itemCount = dataController.items().length,
                         contentElement = that._findContentElement(),
                         freeSpaceRowElements = that._getFreeSpaceRowElements($table),
                         freeSpaceRowCount,
                         scrollingMode;
 
-                    if(freeSpaceRowElements && contentElement) {
+                    if(freeSpaceRowElements && contentElement && dataController.totalCount() >= 0) {
                         var isFreeSpaceRowVisible = false;
 
                         if(itemCount > 0) {
                             if(!that._hasHeight) {
-                                freeSpaceRowCount = that._dataController.pageSize() - itemCount;
+                                freeSpaceRowCount = dataController.pageSize() - itemCount;
                                 scrollingMode = that.option("scrolling.mode");
 
-                                if(freeSpaceRowCount > 0 && that._dataController.pageCount() > 1 && scrollingMode !== "virtual" && scrollingMode !== "infinite") {
+                                if(freeSpaceRowCount > 0 && dataController.pageCount() > 1 && scrollingMode !== "virtual" && scrollingMode !== "infinite") {
                                     styleUtils.setHeight(freeSpaceRowElements, freeSpaceRowCount * that._rowHeight);
                                     isFreeSpaceRowVisible = true;
                                 }

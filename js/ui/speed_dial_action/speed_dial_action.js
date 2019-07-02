@@ -1,8 +1,12 @@
 import registerComponent from "../../core/component_registrator";
 import { extend } from "../../core/utils/extend";
 import Guid from "../../core/guid";
+import readyCallbacks from "../../core/utils/ready_callbacks";
 import Widget from "../widget/ui.widget";
 import { initAction, disposeAction } from "./speed_dial_main_item";
+import { getSwatchContainer } from "../widget/swatch_container";
+
+const ready = readyCallbacks.add;
 
 const SpeedDialAction = Widget.inherit({
     _getDefaultOptions() {
@@ -56,10 +60,10 @@ const SpeedDialAction = Widget.inherit({
             animation: {
                 show: {
                     type: "pop",
-                    duration: 150,
-                    easing: "linear",
+                    duration: 200,
+                    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
                     from: {
-                        scale: 0.3,
+                        scale: 0,
                         opacity: 0
                     },
                     to: {
@@ -69,13 +73,15 @@ const SpeedDialAction = Widget.inherit({
                 },
                 hide: {
                     type: "pop",
-                    duration: 100,
-                    easing: "linear",
+                    duration: 200,
+                    easing: "cubic-bezier(0.4, 0, 0.2, 1)",
                     from: {
-                        scale: 1
+                        scale: 1,
+                        opacity: 1
                     },
                     to: {
-                        scale: 0
+                        scale: 0,
+                        opacity: 0
                     }
                 }
             },
@@ -98,7 +104,11 @@ const SpeedDialAction = Widget.inherit({
     },
 
     _render() {
-        initAction(this);
+        if(!getSwatchContainer(this.$element())) {
+            ready(() => initAction(this));
+        } else {
+            initAction(this);
+        }
     },
 
     _dispose() {

@@ -560,45 +560,25 @@ interface JQuery {
 /* #EndJQueryAugmentation */
 declare module DevExpress.ui {
     /** @name AjaxFileProvider.Options */
-    export interface AjaxFileProviderOptions {
-        /** @name AjaxFileProvider.Options.dateModifiedExpr */
-        dateModifiedExpr?: string | Function;
-        /** @name AjaxFileProvider.Options.isFolderExpr */
-        isFolderExpr?: string | Function;
+    export interface AjaxFileProviderOptions extends FileProviderOptions<AjaxFileProvider> {
         /** @name AjaxFileProvider.Options.itemsExpr */
         itemsExpr?: string | Function;
-        /** @name AjaxFileProvider.Options.nameExpr */
-        nameExpr?: string | Function;
-        /** @name AjaxFileProvider.Options.sizeExpr */
-        sizeExpr?: string | Function;
-        /** @name AjaxFileProvider.Options.thumbnailExpr */
-        thumbnailExpr?: string | Function;
         /** @name AjaxFileProvider.Options.url */
         url?: string;
     }
     /** @name AjaxFileProvider */
-    export class AjaxFileProvider {
+    export class AjaxFileProvider extends FileProvider {
         constructor(options?: AjaxFileProviderOptions)
     }
     /** @name ArrayFileProvider.Options */
-    export interface ArrayFileProviderOptions {
+    export interface ArrayFileProviderOptions extends FileProviderOptions<ArrayFileProvider> {
         /** @name ArrayFileProvider.Options.data */
         data?: Array<any>;
-        /** @name ArrayFileProvider.Options.dateModifiedExpr */
-        dateModifiedExpr?: string | Function;
-        /** @name ArrayFileProvider.Options.isFolderExpr */
-        isFolderExpr?: string | Function;
         /** @name ArrayFileProvider.Options.itemsExpr */
         itemsExpr?: string | Function;
-        /** @name ArrayFileProvider.Options.nameExpr */
-        nameExpr?: string | Function;
-        /** @name ArrayFileProvider.Options.sizeExpr */
-        sizeExpr?: string | Function;
-        /** @name ArrayFileProvider.Options.thumbnailExpr */
-        thumbnailExpr?: string | Function;
     }
     /** @name ArrayFileProvider */
-    export class ArrayFileProvider {
+    export class ArrayFileProvider extends FileProvider {
         constructor(options?: ArrayFileProviderOptions)
     }
     /** @name ColCountResponsible */
@@ -714,21 +694,6 @@ declare module DevExpress.ui {
         /** @name DataHelperMixin.getDataSource() */
         getDataSource(): DevExpress.data.DataSource;
     }
-    /** @name DiagramCustomShapeItem */
-    export interface DiagramCustomShapeItem {
-        /** @name DiagramCustomShapeItem.allowHasText */
-        allowHasText?: boolean;
-        /** @name DiagramCustomShapeItem.defaultHeight */
-        defaultHeight?: number;
-        /** @name DiagramCustomShapeItem.defaultWidth */
-        defaultWidth?: number;
-        /** @name DiagramCustomShapeItem.id */
-        id?: number;
-        /** @name DiagramCustomShapeItem.svgUrl */
-        svgUrl?: string;
-        /** @name DiagramCustomShapeItem.title */
-        title?: string;
-    }
     /** @name DiagramDataSourceParameters */
     export interface DiagramDataSourceParameters {
         /** @name DiagramDataSourceParameters.edges */
@@ -773,8 +738,23 @@ declare module DevExpress.ui {
         /** @name EmailRule.type */
         type?: 'required' | 'numeric' | 'range' | 'stringLength' | 'custom' | 'compare' | 'pattern' | 'email';
     }
+    /** @name FileProvider.Options */
+    export interface FileProviderOptions<T = FileProvider> {
+        /** @name FileProvider.Options.dateModifiedExpr */
+        dateModifiedExpr?: string | Function;
+        /** @name FileProvider.Options.isDirectoryExpr */
+        isDirectoryExpr?: string | Function;
+        /** @name FileProvider.Options.nameExpr */
+        nameExpr?: string | Function;
+        /** @name FileProvider.Options.sizeExpr */
+        sizeExpr?: string | Function;
+        /** @name FileProvider.Options.thumbnailExpr */
+        thumbnailExpr?: string | Function;
+    }
     /** @name FileProvider */
-    export type FileProvider = any;
+    export class FileProvider {
+        constructor(options?: FileProviderOptions)
+    }
     /** @name GridBase.Options */
     export interface GridBaseOptions<T = GridBase> extends WidgetOptions<T> {
         /** @name GridBase.Options.allowColumnReordering */
@@ -1278,8 +1258,13 @@ declare module DevExpress.ui {
         /** @name NumericRule.type */
         type?: 'required' | 'numeric' | 'range' | 'stringLength' | 'custom' | 'compare' | 'pattern' | 'email';
     }
+    /** @name OneDriveFileProvider.Options */
+    export interface OneDriveFileProviderOptions extends FileProviderOptions<OneDriveFileProvider> {
+    }
     /** @name OneDriveFileProvider */
-    export type OneDriveFileProvider = any;
+    export class OneDriveFileProvider extends FileProvider {
+        constructor(options?: OneDriveFileProviderOptions)
+    }
     /** @name PatternRule */
     export interface PatternRule {
         /** @name PatternRule.ignoreEmptyValue */
@@ -1350,24 +1335,14 @@ declare module DevExpress.ui {
         type?: 'required' | 'numeric' | 'range' | 'stringLength' | 'custom' | 'compare' | 'pattern' | 'email';
     }
     /** @name WebApiFileProvider.Options */
-    export interface WebApiFileProviderOptions {
-        /** @name WebApiFileProvider.Options.dateModifiedExpr */
-        dateModifiedExpr?: string | Function;
+    export interface WebApiFileProviderOptions extends FileProviderOptions<WebApiFileProvider> {
         /** @name WebApiFileProvider.Options.endpointUrl */
         endpointUrl?: string;
         /** @name WebApiFileProvider.Options.hasSubDirectoriesExpr */
         hasSubDirectoriesExpr?: string | Function;
-        /** @name WebApiFileProvider.Options.isFolderExpr */
-        isFolderExpr?: string | Function;
-        /** @name WebApiFileProvider.Options.nameExpr */
-        nameExpr?: string | Function;
-        /** @name WebApiFileProvider.Options.sizeExpr */
-        sizeExpr?: string | Function;
-        /** @name WebApiFileProvider.Options.thumbnailExpr */
-        thumbnailExpr?: string | Function;
     }
     /** @name WebApiFileProvider */
-    export class WebApiFileProvider {
+    export class WebApiFileProvider extends FileProvider {
         constructor(options?: WebApiFileProviderOptions)
     }
     /** @name Widget.Options */
@@ -2016,7 +1991,7 @@ declare module DevExpress.ui {
     /** @name dxDiagram.Options */
     export interface dxDiagramOptions extends WidgetOptions<dxDiagram> {
         /** @name dxDiagram.Options.customShapes */
-        customShapes?: Array<DiagramCustomShapeItem>;
+        customShapes?: Array<{ allowHasText?: boolean, connectionPoints?: Array<{ side?: 'north' | 'east' | 'south' | 'west', x?: number, y?: number }>, defaultHeight?: number, defaultText?: string, defaultWidth?: number, id?: number, svgHeight?: number, svgLeft?: number, svgTop?: number, svgUrl?: string, svgWidth?: number, textHeight?: number, textLeft?: number, textTop?: number, textWidth?: number, title?: string }>;
         /** @name dxDiagram.Options.edges */
         edges?: { dataSource?: Array<any> | DevExpress.data.DataSource | DevExpress.data.DataSourceOptions, fromExpr?: string | ((data: any) => any), keyExpr?: string | ((data: any) => any), toExpr?: string | ((data: any) => any) };
         /** @name dxDiagram.Options.export */
@@ -2038,8 +2013,8 @@ declare module DevExpress.ui {
         deleteDataSource(key: string): void;
         /** @name dxDiagram.getData() */
         getData(): string;
-        /** @name dxDiagram.setData(data, keepExistingItems) */
-        setData(data: string, keepExistingItems: boolean): void;
+        /** @name dxDiagram.setData(data, updateExistingItemsOnly) */
+        setData(data: string, updateExistingItemsOnly: boolean): void;
     }
     /** @name dxDrawer.Options */
     export interface dxDrawerOptions extends WidgetOptions<dxDrawer> {
@@ -2141,6 +2116,8 @@ declare module DevExpress.ui {
         selectedItem?: string | number | any;
         /** @name dxDropDownButton.Options.selectedItemKey */
         selectedItemKey?: string | number;
+        /** @name dxDropDownButton.Options.showArrowIcon */
+        showArrowIcon?: boolean;
         /** @name dxDropDownButton.Options.splitButton */
         splitButton?: boolean;
         /** @name dxDropDownButton.Options.stylingMode */
@@ -2293,26 +2270,16 @@ declare module DevExpress.ui {
         customizeDetailColumns?: ((columns: Array<dxDataGridColumn>) => Array<dxDataGridColumn>);
         /** @name dxFileManager.Options.customizeThumbnail */
         customizeThumbnail?: ((fileItem: any) => string);
-        /** @name dxFileManager.Options.dateModifiedExpr */
-        dateModifiedExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.fileProvider */
         fileProvider?: any;
-        /** @name dxFileManager.Options.isFolderExpr */
-        isFolderExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.itemView */
         itemView?: { mode?: 'details' | 'thumbnails', showFolders?: boolean, showParentFolder?: boolean };
-        /** @name dxFileManager.Options.nameExpr */
-        nameExpr?: string | ((fileItem: any) => any);
         /** @name dxFileManager.Options.onSelectedFileOpened */
         onSelectedFileOpened?: ((e: { component?: dxFileManager, element?: DevExpress.core.dxElement, model?: any, fileItem?: any }) => any);
         /** @name dxFileManager.Options.permissions */
         permissions?: { copy?: boolean, create?: boolean, move?: boolean, remove?: boolean, rename?: boolean, upload?: boolean };
         /** @name dxFileManager.Options.selectionMode */
         selectionMode?: 'multiple' | 'single';
-        /** @name dxFileManager.Options.sizeExpr */
-        sizeExpr?: string | ((fileItem: any) => any);
-        /** @name dxFileManager.Options.thumbnailExpr */
-        thumbnailExpr?: string | ((fileItem: any) => any);
     }
     /** @name dxFileManager */
     export class dxFileManager extends Widget {
@@ -2464,6 +2431,8 @@ declare module DevExpress.ui {
         format?: format;
         /** @name dxFilterBuilderField.lookup */
         lookup?: { allowClearing?: boolean, dataSource?: Array<any> | DevExpress.data.DataSourceOptions, displayExpr?: string | ((data: any) => any), valueExpr?: string | Function };
+        /** @name dxFilterBuilderField.name */
+        name?: string;
         /** @name dxFilterBuilderField.trueText */
         trueText?: string;
     }
@@ -3932,8 +3901,6 @@ declare module DevExpress.ui {
         hideAppointmentPopup(saveChanges?: boolean): void;
         /** @name dxScheduler.hideAppointmentTooltip() */
         hideAppointmentTooltip(): void;
-        /** @name dxScheduler.registerKeyHandler(key, handler) */
-        registerKeyHandler(): void;
         /** @name dxScheduler.scrollToTime(hours, minutes, date) */
         scrollToTime(hours: number, minutes: number, date?: Date): void;
         /** @name dxScheduler.showAppointmentPopup(appointmentData, createNewAppointment, currentAppointmentData) */
@@ -4656,11 +4623,11 @@ declare module DevExpress.ui {
         /** @name dxTreeList.Options.onNodesInitialized */
         onNodesInitialized?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, root?: dxTreeListNode }) => any);
         /** @name dxTreeList.Options.onRowClick */
-        onRowClick?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, jQueryEvent?: JQueryEventObject, event?: event, data?: any, key?: any, values?: Array<any>, columns?: Array<any>, rowIndex?: number, rowType?: string, isSelected?: boolean, isExpanded?: boolean, rowElement?: DevExpress.core.dxElement, handled?: boolean }) => any) | string;
+        onRowClick?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, jQueryEvent?: JQueryEventObject, event?: event, data?: any, key?: any, values?: Array<any>, columns?: Array<any>, rowIndex?: number, rowType?: string, isSelected?: boolean, isExpanded?: boolean, rowElement?: DevExpress.core.dxElement, handled?: boolean, node?: dxTreeListNode, level?: number }) => any) | string;
         /** @name dxTreeList.Options.onRowDblClick */
         onRowDblClick?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, event?: event, data?: any, key?: any, values?: Array<any>, columns?: Array<dxTreeListColumn>, rowIndex?: number, rowType?: string, isSelected?: boolean, isExpanded?: boolean, rowElement?: DevExpress.core.dxElement }) => any);
         /** @name dxTreeList.Options.onRowPrepared */
-        onRowPrepared?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, data?: any, key?: any, values?: Array<any>, columns?: Array<dxTreeListColumn>, rowIndex?: number, rowType?: string, isSelected?: boolean, isExpanded?: boolean, rowElement?: DevExpress.core.dxElement }) => any);
+        onRowPrepared?: ((e: { component?: dxTreeList, element?: DevExpress.core.dxElement, model?: any, data?: any, key?: any, values?: Array<any>, columns?: Array<dxTreeListColumn>, rowIndex?: number, rowType?: string, isSelected?: boolean, isExpanded?: boolean, rowElement?: DevExpress.core.dxElement, node?: dxTreeListNode, level?: number }) => any);
         /** @name dxTreeList.Options.paging */
         paging?: dxTreeListPaging;
         /** @name dxTreeList.Options.parentIdExpr */
@@ -5020,7 +4987,7 @@ declare module DevExpress.ui {
         /** @name ui.dialog.confirm(messageHtml,title) */
         static confirm(messageHtml: string, title: string): Promise<boolean> & JQueryPromise<boolean>;
         /** @name ui.dialog.custom(options) */
-        static custom(options: { title?: string, messageHtml?: string, buttons?: Array<dxButtonOptions>, showTitle?: boolean, message?: string }): any;
+        static custom(options: { title?: string, messageHtml?: string, buttons?: Array<dxButtonOptions>, showTitle?: boolean, message?: string, dragEnabled?: boolean }): any;
     }
     /** @name ui.themes */
     export class themes {
@@ -5326,7 +5293,7 @@ declare module DevExpress.data {
         /** @name Store.byKey(key) */
         byKey(key: any | string | number): Promise<any> & JQueryPromise<any>;
         /** @name ODataStore.byKey(key, extraOptions) */
-        byKey(key: any | string | number, extraOptions: { expand?: string | Array<string> }): Promise<any> & JQueryPromise<any>;
+        byKey(key: any | string | number, extraOptions: { expand?: string | Array<string>, select?: string | Array<string> }): Promise<any> & JQueryPromise<any>;
         /** @name ODataStore.createQuery(loadOptions) */
         createQuery(loadOptions: any): any;
     }
@@ -5864,7 +5831,7 @@ declare module DevExpress.viz {
         /** @name BaseLegend.rowItemSpacing */
         rowItemSpacing?: number;
         /** @name BaseLegend.title */
-        title?: { font?: Font, margin?: { bottom?: number, top?: number }, placeholderSize?: number, subtitle?: { font?: Font, offset?: number, text?: string } | string, text?: string, verticalAlignment?: 'bottom' | 'top' } | string;
+        title?: { font?: Font, horizontalAlignment?: 'center' | 'left' | 'right', margin?: { bottom?: number, left?: number, right?: number, top?: number }, placeholderSize?: number, subtitle?: { font?: Font, offset?: number, text?: string } | string, text?: string, verticalAlignment?: 'bottom' | 'top' } | string;
         /** @name BaseLegend.verticalAlignment */
         verticalAlignment?: 'bottom' | 'top';
         /** @name BaseLegend.visible */
@@ -6005,6 +5972,8 @@ declare module DevExpress.viz {
         color?: string;
         /** @name BaseWidget.Options.tooltip.container */
         container?: string | Element | JQuery;
+        /** @name BaseWidget.Options.tooltip.cornerRadius */
+        cornerRadius?: number;
         /** @name BaseWidget.Options.tooltip.enabled */
         enabled?: boolean;
         /** @name BaseWidget.Options.tooltip.font */
@@ -7032,6 +7001,8 @@ declare module DevExpress.viz {
     }
     /** @name dxChartCommonAnnotationConfig */
     export interface dxChartCommonAnnotationConfig {
+        /** @name dxChartCommonAnnotationConfig.allowDragging */
+        allowDragging?: boolean;
         /** @name dxChartCommonAnnotationConfig.argument */
         argument?: number | Date | string;
         /** @name dxChartCommonAnnotationConfig.arrowLength */
@@ -7041,7 +7012,7 @@ declare module DevExpress.viz {
         /** @name dxChartCommonAnnotationConfig.axis */
         axis?: string;
         /** @name dxChartCommonAnnotationConfig.border */
-        border?: { color?: string, dashStyle?: 'dash' | 'dot' | 'longDash' | 'solid', opacity?: number, visible?: boolean, width?: number };
+        border?: { color?: string, cornerRadius?: number, dashStyle?: 'dash' | 'dot' | 'longDash' | 'solid', opacity?: number, visible?: boolean, width?: number };
         /** @name dxChartCommonAnnotationConfig.color */
         color?: string;
         /** @name dxChartCommonAnnotationConfig.customizeTooltip */
@@ -7054,6 +7025,10 @@ declare module DevExpress.viz {
         height?: number;
         /** @name dxChartCommonAnnotationConfig.image */
         image?: string | { height?: number, url?: string, width?: number };
+        /** @name dxChartCommonAnnotationConfig.offsetX */
+        offsetX?: number;
+        /** @name dxChartCommonAnnotationConfig.offsetY */
+        offsetY?: number;
         /** @name dxChartCommonAnnotationConfig.opacity */
         opacity?: number;
         /** @name dxChartCommonAnnotationConfig.paddingLeftRight */
@@ -8758,7 +8733,7 @@ declare module DevExpress.viz {
         /** @name dxRangeSelector.Options.behavior */
         behavior?: { allowSlidersSwap?: boolean, animationEnabled?: boolean, callValueChanged?: 'onMoving' | 'onMovingComplete', manualRangeSelectionEnabled?: boolean, moveSelectedRangeByClick?: boolean, snapToTicks?: boolean };
         /** @name dxRangeSelector.Options.chart */
-        chart?: { barGroupPadding?: number, barGroupWidth?: number, barWidth?: number, bottomIndent?: number, commonSeriesSettings?: dxChartCommonSeriesSettings, dataPrepareSettings?: { checkTypeForAllData?: boolean, convertToAxisDataType?: boolean, sortingMethod?: boolean | ((a: { arg?: Date | number | string, val?: Date | number | string }, b: { arg?: Date | number | string, val?: Date | number | string }) => number) }, equalBarWidth?: boolean, negativesAsZeroes?: boolean, palette?: Array<string> | 'Bright' | 'Default' | 'Harmony Light' | 'Ocean' | 'Pastel' | 'Soft' | 'Soft Pastel' | 'Vintage' | 'Violet' | 'Carmine' | 'Dark Moon' | 'Dark Violet' | 'Green Mist' | 'Soft Blue' | 'Material' | 'Office', paletteExtensionMode?: 'alternate' | 'blend' | 'extrapolate', series?: ChartSeries | Array<ChartSeries>, seriesTemplate?: { customizeSeries?: ((seriesName: any) => ChartSeries), nameField?: string }, topIndent?: number, useAggregation?: boolean, valueAxis?: { inverted?: boolean, logarithmBase?: number, max?: number, min?: number, type?: 'continuous' | 'logarithmic', valueType?: 'datetime' | 'numeric' | 'string' } };
+        chart?: { barGroupPadding?: number, barGroupWidth?: number, barWidth?: number, bottomIndent?: number, commonSeriesSettings?: dxChartCommonSeriesSettings, dataPrepareSettings?: { checkTypeForAllData?: boolean, convertToAxisDataType?: boolean, sortingMethod?: boolean | ((a: { arg?: Date | number | string, val?: Date | number | string }, b: { arg?: Date | number | string, val?: Date | number | string }) => number) }, equalBarWidth?: boolean, maxBubbleSize?: number, minBubbleSize?: number, negativesAsZeroes?: boolean, palette?: Array<string> | 'Bright' | 'Default' | 'Harmony Light' | 'Ocean' | 'Pastel' | 'Soft' | 'Soft Pastel' | 'Vintage' | 'Violet' | 'Carmine' | 'Dark Moon' | 'Dark Violet' | 'Green Mist' | 'Soft Blue' | 'Material' | 'Office', paletteExtensionMode?: 'alternate' | 'blend' | 'extrapolate', series?: ChartSeries | Array<ChartSeries>, seriesTemplate?: { customizeSeries?: ((seriesName: any) => ChartSeries), nameField?: string }, topIndent?: number, useAggregation?: boolean, valueAxis?: { inverted?: boolean, logarithmBase?: number, max?: number, min?: number, type?: 'continuous' | 'logarithmic', valueType?: 'datetime' | 'numeric' | 'string' } };
         /** @name dxRangeSelector.Options.containerBackgroundColor */
         containerBackgroundColor?: string;
         /** @name dxRangeSelector.Options.dataSource */
@@ -9481,6 +9456,8 @@ declare module DevExpress {
         static notify(message: string, type?: string, displayTime?: number): void;
         /** @name ui.notify(options,type,displayTime) */
         static notify(options: any, type?: string, displayTime?: number): void;
+        /** @name ui.repaintFloatingActionButton() */
+        static repaintFloatingActionButton(): void;
         /** @name ui.setTemplateEngine(name) */
         static setTemplateEngine(templateEngineName: string): void;
         /** @name ui.setTemplateEngine(options) */

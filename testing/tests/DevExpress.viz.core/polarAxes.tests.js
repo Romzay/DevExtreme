@@ -85,7 +85,10 @@ var environment = {
         this.range.max = 100;
 
         this.translator = new TranslatorStubCtor();
-        this.translator.getBusinessRange.returns(new RangeStubCtor());
+
+        var br = new RangeStubCtor();
+        br.isEmpty.returns(true);
+        this.translator.getBusinessRange.returns(br);
 
         sinon.stub(translator2DModule, "Translator2D", function() {
             return that.translator;
@@ -620,7 +623,7 @@ QUnit.test("draw ticks. Orientation = center", function(assert) {
 
         assert.equal(this.renderer.path.getCall(i).returnValue.append.firstCall.args[0], this.renderSettings.axesContainerGroup.children[0].children[1], "Created element attached to the group");
         assert.ok(this.renderer.path.getCall(i).returnValue.sharp.calledOnce);
-        assert.deepEqual(this.renderer.path.getCall(i).returnValue.sharp.lastCall.args, [true]);
+        assert.deepEqual(this.renderer.path.getCall(i).returnValue.sharp.lastCall.args, [true, 0]);
     }
 });
 
@@ -1075,7 +1078,7 @@ QUnit.test("draw ticks", function(assert) {
         assert.deepEqual(this.renderer.path.getCall(i).returnValue.attr.getCall(1).args[0], { points: [10, 50, 30, 50], opacity: 1 });
 
         assert.equal(this.renderer.path.getCall(i).returnValue.append.firstCall.args[0], this.renderSettings.axesContainerGroup.children[0].children[1], "Created elements attached to the group");
-        assert.deepEqual(this.renderer.path.getCall(i).returnValue.sharp.lastCall.args, [true], "sharped");
+        assert.deepEqual(this.renderer.path.getCall(i).returnValue.sharp.lastCall.args, [true, 0], "sharped");
     }
 });
 
@@ -1977,9 +1980,7 @@ QUnit.module("Circular polar axis. Set business range", {
         this.axis.validate();
     },
 
-    afterEach() {
-        environment.afterEach.call(this);
-    }
+    afterEach: environment.afterEach
 });
 
 QUnit.test("Set business range when period is set", function(assert) {

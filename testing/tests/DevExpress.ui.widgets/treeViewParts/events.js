@@ -1,22 +1,23 @@
 /* global DATA, internals, initTree, stripFunctions */
 
-var $ = require("jquery"),
-    commonUtils = require("core/utils/common"),
-    typeUtils = require("core/utils/type"),
-    holdEvent = require("events/hold"),
-    fx = require("animation/fx"),
-    devices = require("core/devices"),
-    contextMenuEvent = require("events/contextmenu"),
-    dblclickEvent = require("events/dblclick"),
-    checkEventArgs = function(assert, e) {
-        assert.ok(e.component);
-        assert.ok(e.element);
-        assert.ok(e.itemData);
-        assert.ok(e.itemElement);
-        assert.ok(typeUtils.isDefined(e.itemIndex));
-        assert.ok(e.event);
-        assert.ok(e.node);
-    };
+import $ from "jquery";
+import commonUtils from "core/utils/common";
+import typeUtils from "core/utils/type";
+import holdEvent from "events/hold";
+import devices from "core/devices";
+import fx from "animation/fx";
+import contextMenuEvent from "events/contextmenu";
+import dblclickEvent from "events/dblclick";
+
+const checkEventArgs = function(assert, e) {
+    assert.ok(e.component);
+    assert.ok(e.element);
+    assert.ok(e.itemData);
+    assert.ok(e.itemElement);
+    assert.ok(typeUtils.isDefined(e.itemIndex));
+    assert.ok(e.event);
+    assert.ok(e.node);
+};
 
 QUnit.module("Events", {
     beforeEach: function() {
@@ -470,19 +471,19 @@ QUnit.test("'onSelectionChanged' should have right arguments for nested items (s
 
     var nodes = args.component.getNodes();
 
-    assert.ok(nodes[0].hasOwnProperty("selected"));
+    assert.ok(Object.prototype.hasOwnProperty.call(nodes[0], "selected"));
     assert.strictEqual(nodes[0].selected, undefined);
 
-    assert.ok(nodes[0].items[0].hasOwnProperty("selected"));
+    assert.ok(Object.prototype.hasOwnProperty.call(nodes[0].items[0], "selected"));
     assert.strictEqual(nodes[0].items[0].selected, undefined);
-    assert.ok(nodes[0].items[0].parent.hasOwnProperty("selected"));
+    assert.ok(Object.prototype.hasOwnProperty.call(nodes[0].items[0].parent, "selected"));
     assert.strictEqual(nodes[0].items[0].parent.selected, undefined);
 
     assert.ok(nodes[0].items[0].items[0].selected);
-    assert.ok(nodes[0].items[0].items[0].parent.hasOwnProperty("selected"), undefined);
+    assert.ok(Object.prototype.hasOwnProperty.call(nodes[0].items[0].items[0].parent, "selected"));
 
     assert.ok(!nodes[0].items[0].items[1].selected);
-    assert.ok(nodes[0].items[0].items[1].parent.hasOwnProperty("selected"), undefined);
+    assert.ok(Object.prototype.hasOwnProperty.call(nodes[0].items[0].items[1].parent, "selected"));
 
     assert.ok(nodes[0].items[0].items[0].items[0].selected);
     assert.ok(nodes[0].items[0].items[0].items[0].parent.selected);

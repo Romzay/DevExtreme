@@ -17,6 +17,7 @@ export const Consts = {
     FOCUSED_ITEM_CLASS: "dx-filemanager-focused-item",
     CUSTOM_THUMBNAIL_CLASS: "dx-filemanager-item-custom-thumbnail",
     TOOLBAR_SEPARATOR_ITEM: "dx-filemanager-toolbar-separator-item",
+    DETAILS_ITEM_NAME_CLASS: "dx-filemanager-details-item-name",
     POPUP_BOTTOM_CLASS: "dx-popup-bottom",
     BUTTON_CLASS: "dx-button",
     BUTTON_TEXT_CLASS: "dx-button-text",
@@ -103,6 +104,10 @@ export class FileManagerWrapper {
         return this._$element.find(`.${Consts.GRID_DATA_ROW_CLASS} > td:contains('${itemName}')`);
     }
 
+    getDetailsItemName(index) {
+        return this._$element.find(`.${Consts.DETAILS_ITEM_NAME_CLASS}`).eq(index).text();
+    }
+
     getRowActionButtonInDetailsView(index) {
         const $row = this.getRowInDetailsView(index);
         return this._findActionButton($row);
@@ -142,66 +147,66 @@ export const createTestFileSystem = () => {
     return [
         {
             name: "Folder 1",
-            isFolder: true,
+            isDirectory: true,
             items: [
                 {
                     name: "Folder 1.1",
-                    isFolder: true,
+                    isDirectory: true,
                     items: [
                         {
                             name: "File 1-1.txt",
-                            isFolder: false
+                            isDirectory: false
                         },
                         {
                             name: "File 1-2.txt",
-                            isFolder: false
+                            isDirectory: false
                         },
                         {
                             name: "File 1-3.png",
-                            isFolder: false
+                            isDirectory: false
                         },
                         {
                             name: "File 1-4.jpg",
-                            isFolder: false
+                            isDirectory: false
                         }]
                 },
                 {
                     name: "Folder 1.2",
-                    isFolder: true
+                    isDirectory: true
                 },
                 {
                     name: "File 1-1.txt",
-                    isFolder: false
+                    isDirectory: false
                 },
                 {
                     name: "File 1-2.jpg",
-                    isFolder: false
+                    isDirectory: false
                 }]
         },
         {
             name: "Folder 2",
-            isFolder: true,
+            isDirectory: true,
             items: [
                 {
                     name: "File 2-1.jpg",
-                    isFolder: false
+                    isDirectory: false
                 }]
         },
         {
             name: "Folder 3",
-            isFolder: true
+            isDirectory: true
         },
         {
             name: "File 1.txt",
-            isFolder: false
+            isDirectory: false
         },
         {
             name: "File 2.jpg",
-            isFolder: false
+            isDirectory: false
         },
         {
             name: "File 3.xml",
-            isFolder: false
+            isDirectory: false
         }
     ];
 };

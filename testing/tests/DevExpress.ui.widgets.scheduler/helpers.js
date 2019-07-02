@@ -4,6 +4,13 @@ import { extend } from "core/utils/extend";
 export const TOOLBAR_TOP_LOCATION = "top";
 export const TOOLBAR_BOTTOM_LOCATION = "bottom";
 
+const SCHEDULER_ID = "scheduler";
+const TEST_ROOT_ELEMENT_ID = "qunit-fixture";
+
+export const initTestMarkup = () => $(`#${TEST_ROOT_ELEMENT_ID}`).html(`<div id="${SCHEDULER_ID}"><div data-options="dxTemplate: { name: 'template' }">Task Template</div></div>`);
+
+export const createWrapper = (option) => new SchedulerTestWrapper($(`#${SCHEDULER_ID}`).dxScheduler(option).dxScheduler("instance"));
+
 export class SchedulerTestWrapper {
     constructor(instance) {
         this.instance = instance;
@@ -73,6 +80,8 @@ export class SchedulerTestWrapper {
                 getButton: (index = 0) => $(this.appointments.compact.getButtons().get(index)),
                 getButtonText: (index = 0) => this.appointments.compact.getButton(index).find("span").text(),
                 click: (index = 0) => this.appointments.compact.getButton(index).trigger("dxclick"),
+                getButtonWidth: (index = 0) => this.appointments.compact.getButton(index).get(0).getBoundingClientRect().width,
+                getButtonHeight: (index = 0) => this.appointments.compact.getButton(index).get(0).getBoundingClientRect().height,
             }
         };
 
@@ -108,7 +117,10 @@ export class SchedulerTestWrapper {
 
         this.appointmentForm = {
             getFormInstance: () => this.appointmentPopup.getPopup().find(".dx-form").dxForm("instance"),
-            hasFormSingleColumn: () => this.appointmentPopup.getPopup().find(".dx-responsivebox").hasClass("dx-responsivebox-screen-xs")
+            getEditor: name => this.appointmentForm.getFormInstance().getEditor(name),
+            setSubject: (value) => this.appointmentForm.getEditor("text").option("value", value),
+
+            hasFormSingleColumn: () => this.appointmentPopup.getPopup().find(".dx-responsivebox").hasClass("dx-responsivebox-screen-xs"),
         };
 
         this.workSpace = {
@@ -123,7 +135,8 @@ export class SchedulerTestWrapper {
             getCellWidth: () => this.workSpace.getCells().eq(0).outerWidth(),
             getCellHeight: () => this.workSpace.getCells().eq(0).outerHeight(),
             getAllDayCellWidth: () => this.workSpace.getAllDayCells().eq(0).outerWidth(),
-            getAllDayCellHeight: () => this.workSpace.getAllDayCells().eq(0).outerHeight()
+            getAllDayCellHeight: () => this.workSpace.getAllDayCells().eq(0).outerHeight(),
+            getCurrentTimeIndicator: () => $(".dx-scheduler-date-time-indicator"),
         };
 
         this.grouping = {
@@ -137,5 +150,10 @@ export class SchedulerTestWrapper {
 
     isAdaptivity() {
         return this.instance.option("adaptivityEnabled");
+    }
+
+    drawControl() {
+        $(`#${TEST_ROOT_ELEMENT_ID}`).css("top", 0);
+        $(`#${TEST_ROOT_ELEMENT_ID}`).css("left", 0);
     }
 }

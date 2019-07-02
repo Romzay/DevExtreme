@@ -1,6 +1,6 @@
 import $ from "../../core/renderer";
 
-import Widget from "../widget/ui.widget";
+import DiagramPanel from "./diagram.panel";
 import Toolbar from "../toolbar";
 import ContextMenu from "../context_menu";
 import DiagramCommands from "./ui.diagram.commands";
@@ -20,8 +20,10 @@ const WIDGET_COMMANDS = [
         text: "Properties",
     }
 ];
+const TOOLBAR_SEPARATOR_CLASS = "dx-diagram-toolbar-separator";
+const TOOLBAR_MENU_SEPARATOR_CLASS = "dx-diagram-toolbar-menu-separator";
 
-class DiagramToolbar extends Widget {
+class DiagramToolbar extends DiagramPanel {
     _init() {
         this.bar = new ToolbarDiagramBar(this);
         this._itemHelpers = {};
@@ -48,6 +50,7 @@ class DiagramToolbar extends Widget {
 
     _prepareToolbarItems(items, location, actionHandler) {
         return items.map(item => extend(true,
+            { location: location, locateInMenu: "auto" },
             this._createItem(item, location, actionHandler),
             this._createItemOptions(item),
             this._createItemActionOptions(item, actionHandler)
@@ -55,11 +58,21 @@ class DiagramToolbar extends Widget {
     }
 
     _createItem(item, location, actionHandler) {
+        if(item.widget === "separator") {
+            return {
+                template: (data, index, element) => {
+                    $(element).addClass(TOOLBAR_SEPARATOR_CLASS);
+                },
+                menuItemTemplate: (data, index, element) => {
+                    $(element).addClass(TOOLBAR_MENU_SEPARATOR_CLASS);
+                }
+            };
+        }
         return {
             widget: item.widget || "dxButton",
-            location: location,
-            locateInMenu: "auto",
+            cssClass: item.cssClass,
             options: {
+                stylingMode: "text",
                 text: item.text,
                 hint: item.hint,
                 icon: item.icon,
@@ -68,20 +81,75 @@ class DiagramToolbar extends Widget {
             }
         };
     }
-    _createItemOptions({ widget, items, valueExpr, displayExpr, showText }) {
+    _createItemOptions({ widget, items, valueExpr, displayExpr, showText, hint, icon }) {
         if(widget === "dxSelectBox") {
-            return {
-                options: {
-                    items,
-                    valueExpr,
-                    displayExpr
-                }
-            };
+            return this._createSelectBoxItemOptions(hint, items, valueExpr, displayExpr);
+        } else if(widget === "dxColorBox") {
+            return this._createColorBoxItemOptions(hint, icon);
         } else if(!widget || widget === "dxButton") {
             return {
                 showText: showText || "inMenu"
             };
         }
+    }
+    _createSelectBoxItemOptions(hint, items, valueExpr, displayExpr) {
+        let options = this._createSelectBoxBaseItemOptions(hint);
+        options = extend(true, options, {
+            options: {
+                items,
+                valueExpr,
+                displayExpr
+            }
+        });
+        const isSelectButton = items.every(i => i.icon !== undefined);
+        if(isSelectButton) {
+            options = extend(true, options, {
+                options: {
+                    fieldTemplate: (data, container) => {
+                        $("<i>")
+                            .addClass(data && data.icon)
+                            .appendTo(container);
+                        $("<div>").dxTextBox({
+                            readOnly: true,
+                            stylingMode: "outlined"
+                        }).appendTo(container);
+                    },
+                    itemTemplate: (data) => {
+                        return `<i class="${data.icon}"${data.hint && ` title="${data.hint}`}"}></i>`;
+                    }
+                }
+            });
+        }
+        return options;
+    }
+    _createColorBoxItemOptions(hint, icon) {
+        let options = this._createSelectBoxBaseItemOptions(hint);
+        if(icon) {
+            options = extend(true, options, {
+                options: {
+                    openOnFieldClick: true,
+                    fieldTemplate: (data, container) => {
+                        $("<i>")
+                            .addClass(icon)
+                            .css("borderBottomColor", data)
+                            .appendTo(container);
+                        $("<div>").dxTextBox({
+                            readOnly: true,
+                            stylingMode: "outlined"
+                        }).appendTo(container);
+                    }
+                }
+            });
+        }
+        return options;
+    }
+    _createSelectBoxBaseItemOptions(hint) {
+        return {
+            options: {
+                stylingMode: "filled",
+                hint: hint,
+            }
+        };
     }
     _createItemActionOptions(item, handler) {
         switch(item.widget) {

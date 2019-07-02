@@ -484,6 +484,34 @@ QUnit.test("Click on selectCheckBox shouldn't render editor, editing & selection
     assert.notOk($("#treeList").find(".dx-texteditor").length, "Editing textEditor wasn't rendered");
 });
 
+// T742147
+QUnit.test("Selection checkbox should be rendered if first column is lookup", function(assert) {
+    var treeList = createTreeList({
+        columns: [{
+            dataField: "nameId",
+            lookup: {
+                dataSource: [{ id: 1, name: "Name 1" }],
+                valueExpr: "id",
+                displayExpr: "name"
+            }
+        }, "age"],
+        selection: {
+            mode: 'multiple'
+        },
+        dataSource: [
+            { id: 1, parentId: 0, nameId: 1, age: 19 }
+        ]
+    });
+
+    // act
+    this.clock.tick();
+
+    // assert
+    var $firstDataCell = $(treeList.getCellElement(0, 0));
+    assert.equal($firstDataCell.find(".dx-select-checkbox.dx-checkbox").length, 1, "first cell contains select checkbox");
+    assert.equal($firstDataCell.find(".dx-treelist-text-content").text(), "Name 1", "first cell text");
+});
+
 QUnit.test("Filter row should not contains selection checkboxes", function(assert) {
     createTreeList({
         columns: ["name", "age"],
@@ -937,6 +965,65 @@ QUnit.test("Expand row if repaintChangesOnly is true", function(assert) {
     assert.strictEqual($(treeList.getRowElement(0)).find(".dx-treelist-expanded").length, 1, "first row has expanded icon");
 });
 
+// T742885
+QUnit.test("Expand node after filtering when it has many children and they are selected", function(assert) {
+    // arrange
+    var clock = sinon.useFakeTimers(),
+        treeList = createTreeList({
+            loadingTimeout: 30,
+            height: 200,
+            dataSource: {
+                store: {
+                    type: "array",
+                    data: [{
+                        field1: "test1",
+                        items: [{
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }, {
+                            field1: "test2"
+                        }]
+                    }]
+                },
+                pageSize: 2
+            },
+            scrolling: {
+                mode: "virtual"
+            },
+            selection: {
+                mode: "multiple"
+            },
+            itemsExpr: "items",
+            dataStructure: "tree",
+            columns: [{ dataField: "field1", dataType: "string", filterValues: ["test2"] }],
+            onContentReady: function(e) {
+                e.component.selectRows([2, 3, 4, 5, 6, 7, 8, 9]);
+            }
+        });
+
+    clock.tick(500);
+
+    // act
+    treeList.collapseRow(1);
+    clock.tick(100);
+
+    // assert
+    var items = treeList.getVisibleRows();
+    assert.strictEqual(items.length, 1, "row count");
+    assert.notOk(treeList.isRowExpanded(1), "first node is collapsed");
+});
+
 QUnit.module("Focused Row", {
     beforeEach: function() {
         this.clock = sinon.useFakeTimers();
@@ -963,6 +1050,8 @@ QUnit.test("TreeList with focusedRowEnabled and focusedRowIndex 0", function(ass
 QUnit.test("TreeList with focusedRowKey", function(assert) {
     // arrange, act
     var treeList = createTreeList({
+        height: 100,
+        keyExpr: "id",
         dataSource: generateData(10),
         paging: {
             pageSize: 4
@@ -982,6 +1071,8 @@ QUnit.test("TreeList with focusedRowKey", function(assert) {
 QUnit.test("TreeList with remoteOperations and focusedRowKey", function(assert) {
     // arrange, act
     var treeList = createTreeList({
+        height: 100,
+        keyExpr: "id",
         dataSource: generateData(10),
         remoteOperations: true,
         paging: {

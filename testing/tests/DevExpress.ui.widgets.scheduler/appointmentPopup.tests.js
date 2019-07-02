@@ -890,26 +890,6 @@ QUnit.test("focus is called on popup hiding", function(assert) {
     assert.ok(spy.calledOnce, "focus is called");
 });
 
-QUnit.test("Appointment popup should have correct 'fullScreen' option", function(assert) {
-    this.instance.showAppointmentPopup({ startDate: new Date(2015, 1, 1), endDate: new Date(2015, 1, 2) });
-
-    var popup = this.instance.getAppointmentPopup();
-
-    if(!devices.current().generic) {
-        assert.ok(popup.option("fullScreen"), "the fullScreen option is OK");
-    } else {
-        assert.notOk(popup.option("fullScreen"), "the fullScreen option is OK");
-    }
-});
-
-QUnit.test("Appointment popup should have correct 'maxWidth' option", function(assert) {
-    this.instance.showAppointmentPopup({ startDate: new Date(2015, 1, 1), endDate: new Date(2015, 1, 2) });
-
-    var popup = this.instance.getAppointmentPopup();
-
-    assert.equal(popup.option("maxWidth"), 610, "the maxWidth option is OK");
-});
-
 QUnit.test("Popup should has close button in mobile theme when allowUpdating: false", function(assert) {
     this.instance.option({
         editing: {
@@ -1064,11 +1044,19 @@ QUnit.test("Appointment form will have right dates on multiple openings (T727713
     assert.deepEqual(formData.endDate, appointments[1].endDate, "First opening appointment form has right endDate");
 
     scheduler.instance.hideAppointmentPopup();
+
+    let form = this.instance.getAppointmentDetailsForm();
+    let formDataChangedCount = 0;
+    form.option("onOptionChanged", (args) => {
+        if(args.name === "formData") formDataChangedCount++;
+    });
+
     scheduler.appointments.dblclick(0);
     formData = scheduler.appointmentForm.getFormInstance().option('formData');
 
     assert.deepEqual(formData.startDate, appointments[0].startDate, "Second opening appointment form has right startDate");
     assert.deepEqual(formData.endDate, appointments[0].endDate, "Second opening appointment form has right endDate");
+    assert.equal(formDataChangedCount, 1, 'Form data changed one time');
 });
 
 QUnit.test("The vertical scroll bar is shown when an appointment popup fill to a small window's height", function(assert) {

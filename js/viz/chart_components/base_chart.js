@@ -679,7 +679,8 @@ var BaseChart = BaseWidget.inherit({
         const layoutTargets = that._getLayoutTargets();
 
         this._layoutAxes((needSpace) => {
-            const canvas = that._renderAxes(drawOptions, preparedOptions);
+            const axisDrawOptions = needSpace ? extend({}, drawOptions, { animate: false }) : drawOptions;
+            const canvas = that._renderAxes(axisDrawOptions, preparedOptions);
             that._shrinkAxes(needSpace, canvas);
         });
 
@@ -1414,6 +1415,10 @@ var BaseChart = BaseWidget.inherit({
 
     _change_INIT() {
         this._reinit();
+    },
+
+    _stopCurrentHandling: function() {
+        this._tracker.stopCurrentHandling();
     }
 });
 

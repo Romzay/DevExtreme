@@ -3496,6 +3496,18 @@ var dxChartCommonAnnotationConfig = {
     */
     y: undefined,
     /**
+    * @name dxChartCommonAnnotationConfig.offsetX
+    * @type number
+    * @default undefined
+    */
+    offsetX: undefined,
+    /**
+    * @name dxChartCommonAnnotationConfig.offsetY
+    * @type number
+    * @default undefined
+    */
+    offsetY: undefined,
+    /**
     * @name dxChartCommonAnnotationConfig.tooltipEnabled
     * @type boolean
     * @default true
@@ -3547,8 +3559,14 @@ var dxChartCommonAnnotationConfig = {
         * @type boolean
         * @default true
         */
-        visible: true
-        // cornerRadius: 0
+        visible: true,
+        /**
+        * @name dxChartCommonAnnotationConfig.border.cornerRadius
+        * @type number
+        * @default 0
+        * @default 4 @for Material 
+        */
+        cornerRadius: 0
     },
     /**
     * @name dxChartCommonAnnotationConfig.font
@@ -3686,7 +3704,13 @@ var dxChartCommonAnnotationConfig = {
     * @type Enums.VizTextOverflow
     * @default "ellipsis"
     */
-    textOverflow: "ellipsis"
+    textOverflow: "ellipsis",
+    /**
+    * @name dxChartCommonAnnotationConfig.allowDragging
+    * @type boolean
+    * @default false
+    */
+    allowDragging: false
 };
 /**
 * @name dxChartAnnotationConfig

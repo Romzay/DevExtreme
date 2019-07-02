@@ -10,19 +10,14 @@ import { DataSource } from "data/data_source/data_source";
 import keyboardMock from "../../helpers/keyboardMock.js";
 import devices from "core/devices";
 import dataUtils from "core/element_data";
-import { SchedulerTestWrapper } from './helpers.js';
+import { createWrapper, initTestMarkup } from './helpers.js';
 import { getSimpleDataArray } from './data.js';
 
 import "common.css!";
 import "generic_light.css!";
 import "ui/scheduler/ui.scheduler";
 
-QUnit.testStart(function() {
-    $("#qunit-fixture").html(
-        '<div id="scheduler">\
-            <div data-options="dxTemplate: { name: \'template\' }">Task Template</div>\
-            </div>');
-});
+QUnit.testStart(() => initTestMarkup());
 
 const getDeltaTz = (schedulerTz, date) => schedulerTz * 3600000 + date.getTimezoneOffset() * 60000;
 
@@ -30,8 +25,8 @@ QUnit.module("Integration: Appointment tooltip", {
     beforeEach: function() {
         fx.off = true;
         this.createInstance = function(options) {
-            this.instance = $("#scheduler").dxScheduler($.extend(options, { height: 600 })).dxScheduler("instance");
-            this.scheduler = new SchedulerTestWrapper(this.instance);
+            this.scheduler = createWrapper($.extend(options, { height: 600 }));
+            this.instance = this.scheduler.instance;
         };
 
         this.clock = sinon.useFakeTimers();
@@ -837,20 +832,6 @@ QUnit.test("The appointmentData argument of the appointment tooltip template is 
 const moduleConfig = {
     beforeEach: function() {
         fx.off = true;
-
-        this.createScheduler = function(options) {
-            this.data = getSimpleDataArray();
-            const defaultOption = {
-                dataSource: this.data,
-                views: ["agenda", "day", "week", "workWeek", "month"],
-                currentView: "month",
-                currentDate: new Date(2017, 4, 25),
-                startDayHour: 9,
-                height: 600,
-            };
-            return new SchedulerTestWrapper($("#scheduler").dxScheduler($.extend(defaultOption, options)).dxScheduler("instance"));
-        };
-
         this.clock = sinon.useFakeTimers();
     },
 
@@ -861,8 +842,20 @@ const moduleConfig = {
 };
 
 QUnit.module("New common tooltip for compact and cell appointments", moduleConfig, function() {
+    const createScheduler = (options, data) => {
+        const defaultOption = {
+            dataSource: data || getSimpleDataArray(),
+            views: ["agenda", "day", "week", "workWeek", "month"],
+            currentView: "month",
+            currentDate: new Date(2017, 4, 25),
+            startDayHour: 9,
+            height: 600,
+        };
+        return createWrapper($.extend(defaultOption, options));
+    };
+
     QUnit.test("Title in tooltip should equals title of cell appointments in month view", function(assert) {
-        const scheduler = this.createScheduler();
+        const scheduler = createScheduler();
         assert.notOk(scheduler.tooltip.isVisible(), "On page load tooltip should be invisible");
 
         for(let i = 0; i < scheduler.appointments.getAppointmentCount(); i++) {
@@ -891,7 +884,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
     });
 
     QUnit.test("Title in tooltip should equals title of cell appointments in other views", function(assert) {
-        const scheduler = this.createScheduler();
+        const scheduler = createScheduler();
         assert.notOk(scheduler.tooltip.isVisible(), "On page load tooltip should be invisible");
 
         const views = ["week", "day", "workWeek", "agenda"];
@@ -909,7 +902,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
     });
 
     QUnit.test("Delete button in tooltip shouldn't render if editing = false", function(assert) {
-        const scheduler = this.createScheduler({
+        const scheduler = createScheduler({
             editing: false
         });
 
@@ -932,12 +925,13 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
     });
 
     QUnit.test("Compact button should hide or show after change in data source", function(assert) {
-        const scheduler = this.createScheduler();
+        const dataList = getSimpleDataArray();
+        const scheduler = createScheduler({}, dataList);
 
         assert.equal(scheduler.appointments.compact.getButtonText(), "1 more", "Value on init should be correct");
         assert.equal(scheduler.appointments.compact.getButtonCount(), 5, "Count of compact buttons on init should be correct");
 
-        scheduler.instance.deleteAppointment(this.data[0]);
+        scheduler.instance.deleteAppointment(dataList[0]);
         assert.equal(scheduler.appointments.compact.getButtonCount(), 4, "Count of compact buttons should be reduce after delete appointment");
 
         scheduler.instance.addAppointment({
@@ -958,7 +952,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
     });
 
     QUnit.test("Tooltip should hide after perform action", function(assert) {
-        const scheduler = this.createScheduler();
+        const scheduler = createScheduler();
 
         scheduler.appointments.click();
         assert.ok(scheduler.tooltip.isVisible(), "Tooltip should visible");
@@ -991,7 +985,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
 
     QUnit.test("Tooltip should work correct in week view", function(assert) {
         const DEFAULT_TEXT = "Temp appointment";
-        const scheduler = this.createScheduler({
+        const scheduler = createScheduler({
             currentView: "week",
             width: 600
         });
@@ -1020,7 +1014,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
             return scheduler.tooltip.getItemElement().html().indexOf(`<div class="${className}">`) !== -1;
         };
 
-        const scheduler = this.createScheduler({
+        const scheduler = createScheduler({
             appointmentTooltipTemplate: () => $('<div />').addClass(TOOLTIP_TEMPLATE_MARKER_CLASS_NAME)
         });
 
@@ -1041,7 +1035,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
 
     QUnit.test("appointmentTooltipTemplate method should pass valid arguments", function(assert) {
         let templateCallCount = 0;
-        const scheduler = this.createScheduler({
+        const scheduler = createScheduler({
             appointmentTooltipTemplate: (appointmentData, contentElement, targetedAppointmentData, index) => {
                 assert.ok($(contentElement).hasClass("dx-list-item-content"), "Content element should be list item");
                 assert.equal(targetedAppointmentData.text, appointmentData.text, "targetedAppointmentData should be not empty");
@@ -1066,7 +1060,7 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
 
     if(devices.current().deviceType === "desktop") {
         QUnit.test("Keyboard navigation in tooltip", function(assert) {
-            const scheduler = this.createScheduler();
+            const scheduler = createScheduler();
             const ITEM_FOCUSED_STATE_CLASS_NAME = "dx-state-focused";
 
             const checkFocusedState = index => scheduler.tooltip.getItemElement(index).hasClass(ITEM_FOCUSED_STATE_CLASS_NAME);
@@ -1093,8 +1087,32 @@ QUnit.module("New common tooltip for compact and cell appointments", moduleConfi
         });
     }
 
+    QUnit.test("onAppointmentDblClick event should raised after click on tooltip from collector and in adaptivity mode", function(assert) {
+        const options = {
+            onAppointmentClick: () => {}
+        };
+        const stub = sinon.stub(options, "onAppointmentClick");
+        const scheduler = createScheduler(options);
+
+        scheduler.appointments.click();
+        stub.reset();
+        scheduler.tooltip.clickOnItem();
+        assert.equal(stub.callCount, 0, "onAppointmentClick shouldn't raised after click on common tooltip");
+
+        scheduler.appointments.compact.click();
+        scheduler.tooltip.clickOnItem();
+        assert.equal(stub.callCount, 1, "onAppointmentClick should raised after click on tooltip from collector");
+
+        stub.reset();
+
+        scheduler.instance.option("adaptivityEnabled", true);
+        scheduler.appointments.compact.click();
+        scheduler.tooltip.clickOnItem();
+        assert.equal(stub.callCount, 1, "onAppointmentClick should raised in adaptivity mode");
+    });
+
     QUnit.test("Tooltip should crop list, if list has many items", function(assert) {
-        const scheduler = this.createScheduler({
+        const scheduler = createScheduler({
             dataSource: [
                 {
                     text: "Prepare 2015 Marketing Plan",

@@ -8,6 +8,7 @@ import EmptyTemplate from "../widget/empty_template";
 import Editor from "../editor/editor";
 import Errors from "../widget/ui.errors";
 import Callbacks from "../../core/utils/callbacks";
+import { Deferred } from "../../core/utils/deferred";
 
 import QuillRegistrator from "./quill_registrator";
 import "./converters/delta";
@@ -231,7 +232,8 @@ const HtmlEditor = Editor.inherit({
 
     _init: function() {
         this.callBase();
-        this.cleanCallback = Callbacks();
+        this._cleanCallback = Callbacks();
+        this._contentInitializedCallback = Callbacks();
     },
 
     _getAnonymousTemplateName: function() {
@@ -323,13 +325,20 @@ const HtmlEditor = Editor.inherit({
     },
 
     _render: function() {
-        if(!this._quillRegistrator) {
-            this._quillRegistrator = new QuillRegistrator();
-        }
-
         this._prepareConverters();
 
         this.callBase();
+    },
+
+    _prepareQuillRegistrator: function() {
+        if(!this._quillRegistrator) {
+            this._quillRegistrator = new QuillRegistrator();
+        }
+    },
+
+    _getRegistrator: function() {
+        this._prepareQuillRegistrator();
+        return this._quillRegistrator;
     },
 
     _prepareConverters: function() {
@@ -347,9 +356,15 @@ const HtmlEditor = Editor.inherit({
     },
 
     _renderContentImpl: function() {
+        this._contentRenderedDeferred = new Deferred();
+
+        const renderContentPromise = this._contentRenderedDeferred.promise();
+
         this.callBase();
         this._renderHtmlEditor();
         this._renderFormDialog();
+
+        return renderContentPromise;
     },
 
     _renderHtmlEditor: function() {
@@ -360,7 +375,7 @@ const HtmlEditor = Editor.inherit({
             customizeModules(modulesConfig);
         }
 
-        this._quillInstance = this._quillRegistrator.createEditor(this._$htmlContainer[0], {
+        this._quillInstance = this._getRegistrator().createEditor(this._$htmlContainer[0], {
             placeholder: this.option("placeholder"),
             readOnly: this.option("readOnly") || this.option("disabled"),
             modules: modulesConfig,
@@ -373,8 +388,21 @@ const HtmlEditor = Editor.inherit({
 
         if(this._hasTranscludedContent()) {
             this._updateContentTask = executeAsync(() => {
-                this._updateHtmlContent(this._deltaConverter.toHtml());
+                this._applyTranscludedContent();
             });
+        } else {
+            this._finalizeContentRendering();
+        }
+    },
+
+    _applyTranscludedContent: function() {
+        const markup = this._deltaConverter.toHtml();
+        const newDelta = this._quillInstance.clipboard.convert(markup);
+
+        if(newDelta.ops.length) {
+            this._quillInstance.setContents(newDelta);
+        } else {
+            this._finalizeContentRendering();
         }
     },
 
@@ -383,7 +411,7 @@ const HtmlEditor = Editor.inherit({
     },
 
     _getModulesConfig: function() {
-        const wordListMatcher = getWordMatcher(this._quillRegistrator.getQuill());
+        const wordListMatcher = getWordMatcher(this._getRegistrator().getQuill());
         let modulesConfig = extend({
             toolbar: this._getModuleConfigByOption("toolbar"),
             variables: this._getModuleConfigByOption("variables"),
@@ -426,7 +454,7 @@ const HtmlEditor = Editor.inherit({
 
     _getCustomModules: function() {
         const modules = {};
-        const moduleNames = this._quillRegistrator.getRegisteredModuleNames();
+        const moduleNames = this._getRegistrator().getRegisteredModuleNames();
 
         moduleNames.forEach(modulePath => {
             modules[modulePath] = this._getBaseModuleConfig();
@@ -437,13 +465,22 @@ const HtmlEditor = Editor.inherit({
 
     _textChangeHandler: function(newDelta, oldDelta, source) {
         const htmlMarkup = this._deltaConverter.toHtml();
-
-
         const value = this._isMarkdownValue() ? this._updateValueByType(MARKDOWN_VALUE_TYPE, htmlMarkup) : htmlMarkup;
 
         if(this.option("value") !== value) {
             this._isEditorUpdating = true;
             this.option("value", value);
+        }
+
+        this._finalizeContentRendering();
+    },
+
+    _finalizeContentRendering: function() {
+        if(this._contentRenderedDeferred) {
+            this.clearHistory();
+            this._contentInitializedCallback.fire();
+            this._contentRenderedDeferred.resolve();
+            this._contentRenderedDeferred = undefined;
         }
     },
 
@@ -549,11 +586,12 @@ const HtmlEditor = Editor.inherit({
     _clean: function() {
         if(this._quillInstance) {
             this._quillInstance.off("text-change", this._textChangeHandlerWithContext);
-            this.cleanCallback.fire();
+            this._cleanCallback.fire();
         }
 
         this._abortUpdateContentTask();
-        this.cleanCallback.empty();
+        this._cleanCallback.empty();
+        this._contentInitializedCallback.empty();
         this.callBase();
     },
 
@@ -577,7 +615,11 @@ const HtmlEditor = Editor.inherit({
     },
 
     addCleanCallback(callback) {
-        this.cleanCallback.add(callback);
+        this._cleanCallback.add(callback);
+    },
+
+    addContentInitializedCallback(callback) {
+        this._contentInitializedCallback.add(callback);
     },
 
     /**
@@ -586,7 +628,7 @@ const HtmlEditor = Editor.inherit({
     * @param1 modules:Object
     */
     register: function(components) {
-        this._quillRegistrator.registerModules(components);
+        this._getRegistrator().registerModules(components);
 
         this.repaint();
     },
@@ -598,7 +640,7 @@ const HtmlEditor = Editor.inherit({
     * @return Object
     */
     get: function(modulePath) {
-        return this._quillRegistrator.getQuill().import(modulePath);
+        return this._getRegistrator().getQuill().import(modulePath);
     },
 
     /**

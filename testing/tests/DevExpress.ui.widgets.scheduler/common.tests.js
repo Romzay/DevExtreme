@@ -22,6 +22,7 @@ import dataUtils from "core/element_data";
 import keyboardMock from "../../helpers/keyboardMock.js";
 import themes from "ui/themes";
 import { SchedulerTestWrapper } from "./helpers.js";
+import resizeCallbacks from "core/utils/resize_callbacks";
 
 import "ui/scheduler/ui.scheduler";
 import "common.css!";
@@ -1289,6 +1290,7 @@ QUnit.testStart(function() {
         beforeEach: function() {
             this.createInstance = function(options) {
                 this.instance = $("#scheduler").dxScheduler(options).dxScheduler("instance");
+                this.scheduler = new SchedulerTestWrapper(this.instance);
             };
             this.clock = sinon.useFakeTimers();
         },
@@ -1855,15 +1857,6 @@ QUnit.testStart(function() {
         assert.ok(repaintStub.calledOnce, "Sheduler was repainted");
     });
 
-    QUnit.test("Appointment popup should have right defaultOptionsRules", function(assert) {
-        this.createInstance();
-        this.instance.showAppointmentPopup({ startDate: new Date(2015, 1, 1), endDate: new Date(2015, 1, 2) });
-
-        var popupDefaultOptions = this.instance.getAppointmentPopup().option("defaultOptionsRules")[0].options;
-
-        assert.deepEqual(popupDefaultOptions, { fullScreen: true }, "Popup has right default");
-    });
-
     QUnit.test("Filter options should be updated when dataSource is changed", function(assert) {
         this.createInstance({
             currentDate: new Date(2016, 2, 15),
@@ -1908,9 +1901,9 @@ QUnit.testStart(function() {
         });
 
         var keyboard = keyboardMock(this.instance.getWorkSpace().$element()),
-            cells = this.instance.$element().find(".dx-scheduler-date-table-cell");
+            cell = this.scheduler.workSpace.getCell(7);
 
-        pointerMock(cells.eq(7)).start().click();
+        pointerMock(cell).start().click();
         keyboard.keyDown("down", { shiftKey: true });
 
         assert.deepEqual(this.instance.option("selectedCellData"), [{
@@ -1924,7 +1917,35 @@ QUnit.testStart(function() {
         }], "correct cell data");
 
         this.instance.option("currentView", "month");
-        assert.deepEqual(this.instance.option("selectedCellData"), []);
+        assert.deepEqual(this.instance.option("selectedCellData"), [], "selectedCellData was cleared");
+    });
+
+    QUnit.test("selectedCellData option should be updated after currentDate changing", function(assert) {
+        this.createInstance({
+            currentDate: new Date(2018, 4, 10),
+            views: ["week", "month"],
+            currentView: "week",
+            focusStateEnabled: true
+        });
+
+        var keyboard = keyboardMock(this.instance.getWorkSpace().$element()),
+            cell = this.scheduler.workSpace.getCell(7);
+
+        pointerMock(cell).start().click();
+        keyboard.keyDown("down", { shiftKey: true });
+
+        assert.deepEqual(this.instance.option("selectedCellData"), [{
+            startDate: new Date(2018, 4, 6, 0, 30),
+            endDate: new Date(2018, 4, 6, 1),
+            allDay: false
+        }, {
+            startDate: new Date(2018, 4, 6, 1),
+            endDate: new Date(2018, 4, 6, 1, 30),
+            allDay: false
+        }], "correct cell data");
+
+        this.instance.option("currentDate", new Date(2018, 5, 10));
+        assert.deepEqual(this.instance.option("selectedCellData"), [], "selectedCellData was cleared");
     });
 
     QUnit.test("Multiple reloading should be avoided after some options changing (T656320)", function(assert) {
@@ -1946,6 +1967,24 @@ QUnit.testStart(function() {
         this.instance.option("endDayHour", 18);
         this.instance.endUpdate();
         assert.equal(counter, 2, "Data source was reloaded one more time after some options changing");
+    });
+
+    QUnit.test("Multiple reloading should be avoided after repaint (T737181)", function(assert) {
+        var counter = 0;
+
+        this.createInstance();
+
+        this.instance.option("dataSource", new DataSource({
+            store: new CustomStore({
+                load: function() {
+                    counter++;
+                    return [];
+                }
+            })
+        }));
+        assert.equal(counter, 1, "Data source was reloaded after dataSource option changing");
+        this.instance.repaint();
+        assert.equal(counter, 1, "Data source wasn't reloaded after repaint");
     });
 
     QUnit.test("Multiple reloading should be avoided after some currentView options changing (T656320)", function(assert) {
@@ -2154,7 +2193,7 @@ QUnit.testStart(function() {
             dataSource: new DataSource({ store: oldData })
         });
 
-        this.instance.updateAppointment(oldData[0], newData);
+        this.instance.updateAppointment($.extend({}, oldData[0]), newData);
         this.clock.tick();
 
         var args = updatingSpy.getCall(0).args[0];
@@ -2354,7 +2393,7 @@ QUnit.testStart(function() {
         var pointer = pointerMock(this.instance.$element().find(".dx-resizable-handle-right").eq(0)).start();
         pointer.dragStart().drag(cellWidth * 2, 0).dragEnd();
 
-        assert.equal(this.instance.$element().find(".dx-scheduler-appointment").eq(0).outerWidth(), initialWidth, "Width is OK");
+        assert.roughEqual(this.instance.$element().find(".dx-scheduler-appointment").eq(0).outerWidth(), initialWidth, 1, "Width is OK");
     });
 
     QUnit.test("Appointment should have initial size if 'cancel' flag is defined as true during update operation (if appointment takes few days)", function(assert) {
@@ -3345,6 +3384,28 @@ QUnit.testStart(function() {
         });
 
         this.instance.deleteAppointment(appointment);
+    });
+
+    QUnit.test("Workspace dimension changing should be called before appointment repainting, when scheduler was resized (T739866)", function(assert) {
+        let appointment = {
+            startDate: new Date(2016, 2, 15, 1).toString(),
+            endDate: new Date(2016, 2, 15, 2).toString()
+        };
+
+        this.createInstance({
+            currentDate: new Date(2016, 2, 15),
+            views: ["day"],
+            currentView: "day",
+            width: 800,
+            dataSource: [appointment]
+        });
+
+        let workspaceSpy = sinon.spy(this.instance._workSpace, "_dimensionChanged");
+        let appointmentsSpy = sinon.spy(this.instance._appointments, "_repaintAppointments");
+
+        resizeCallbacks.fire();
+
+        assert.ok(appointmentsSpy.calledAfter(workspaceSpy), "workSpace dimension changing was called before appointments repainting");
     });
 })("Events");
 
