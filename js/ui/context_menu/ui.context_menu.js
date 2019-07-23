@@ -72,7 +72,6 @@ var ContextMenu = MenuBase.inherit((function() {
                 /**
                 * @name dxContextMenuOptions.items
                 * @type Array<dxContextMenuItem>
-                * @inheritdoc
                 */
                 /**
                 * @name dxContextMenuOptions.showEvent
@@ -185,30 +184,25 @@ var ContextMenu = MenuBase.inherit((function() {
                 /**
                  * @name dxContextMenuOptions.itemHoldAction
                  * @hidden
-                 * @inheritdoc
                  */
 
                 /**
                 * @name dxContextMenuOptions.onItemReordered
                 * @hidden
-                * @inheritdoc
                 */
 
                 /**
                 * @name dxContextMenuOptions.selectedItems
                 * @hidden
-                * @inheritdoc
                 */
                 /**
                 * @name dxContextMenuItem
                 * @inherits dxMenuBaseItem
                 * @type object
-                * @inheritdoc
                 */
                 /**
                 * @name dxContextMenuItem.items
                 * @type Array<dxContextMenuItem>
-                * @inheritdoc
                 */
 
                 onLeftFirstItem: null,
@@ -907,19 +901,26 @@ var ContextMenu = MenuBase.inherit((function() {
                     break;
                 case "closeOnOutsideClick":
                     break;
-
                 default:
                     this.callBase(args);
             }
         },
 
         _renderVisibility: function(showing) {
+            this._cachedJQEvent = undefined;
+
             return showing ? this._show() : this._hide();
         },
 
         _toggleVisibility: noop,
 
         _show: function(event) {
+            if(typeUtils.isDefined(event)) {
+                this._cachedJQEvent = event;
+            } else {
+                event = this._cachedJQEvent;
+            }
+
             var args = { jQEvent: event },
                 promise = new Deferred().reject().promise();
 
@@ -1001,6 +1002,7 @@ var ContextMenu = MenuBase.inherit((function() {
             }
 
             this.setAria("owns", undefined);
+            this._cachedJQEvent = undefined;
 
             return promise || new Deferred().reject().promise();
         },

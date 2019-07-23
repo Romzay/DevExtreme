@@ -3792,6 +3792,34 @@ QUnit.module("keyboard navigation", moduleSetup, () => {
         assert.strictEqual(instance.option("value"), 4, "downArrow");
     });
 
+    QUnit.test("downArrow should load next page", (assert) => {
+        const $element = $("#selectBox").dxSelectBox({
+                dataSource: {
+                    store: [1, 2, 3, 4, 5, 6],
+                    paginate: true,
+                    pageSize: 2
+                },
+                value: null,
+                focusStateEnabled: true,
+                opened: false,
+                deferRendering: true
+            }),
+            $input = $element.find(toSelector(TEXTEDITOR_INPUT_CLASS)),
+            instance = $element.dxSelectBox("instance"),
+            keyboard = keyboardMock($input);
+
+        keyboard.press("down");
+        keyboard.press("down");
+        keyboard.press("down");
+        keyboard.press("down");
+
+        const $list = $(instance.content()).find(".dx-list");
+
+        assert.ok($list.length, "list is rendered");
+        assert.strictEqual(instance.option("value"), 4, "value is correct");
+        assert.strictEqual($list.find(".dx-list-item").text(), "1234", "all previous list items are loaded");
+    });
+
     QUnit.test("value should be correctly changed via arrow keys when grouped datasource is used", (assert) => {
         const $element = $("#selectBox").dxSelectBox({
             dataSource: new DataSource({
@@ -4526,6 +4554,22 @@ QUnit.module("acceptCustomValue mode", moduleSetup, () => {
             .change();
 
         assert.equal($selectBox.dxSelectBox("option", "value"), "0", "0 value was be set");
+    });
+
+    QUnit.test("press on tab should close popup after custom value input if search is enabled", (assert) => {
+        const $selectBox = $("#selectBox").dxSelectBox({
+            searchEnabled: true,
+            acceptCustomValue: true,
+        });
+        const $input = $selectBox.find(toSelector(TEXTEDITOR_INPUT_CLASS));
+        const keyboard = keyboardMock($input);
+        const instance = $selectBox.dxSelectBox("instance");
+
+        keyboard
+            .type("test")
+            .press("tab");
+
+        assert.notOk(instance.option("opened"), "popup is closed");
     });
 
     QUnit.test("custom value should be added on enter key when acceptCustomValue=true", (assert) => {

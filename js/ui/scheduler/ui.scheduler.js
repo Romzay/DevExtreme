@@ -923,13 +923,11 @@ const Scheduler = Widget.inherit({
             /**
                 * @name dxSchedulerOptions.activeStateEnabled
                 * @hidden
-                * @inheritdoc
                 */
 
             /**
                 * @name dxSchedulerOptions.hoverStateEnabled
                 * @hidden
-                * @inheritdoc
                 */
             /**
                 * @name dxSchedulerAppointment
@@ -1044,7 +1042,6 @@ const Scheduler = Widget.inherit({
                         * @name dxSchedulerOptions.focusStateEnabled
                         * @type boolean
                         * @default true @for desktop
-                        * @inheritdoc
                         */
                     focusStateEnabled: true
                 }
@@ -1786,6 +1783,7 @@ const Scheduler = Widget.inherit({
     },
 
     _dispose: function() {
+        this._appointmentTooltip && this._appointmentTooltip.dispose();
         this.hideAppointmentPopup();
         this.hideAppointmentTooltip();
 
@@ -2903,7 +2901,7 @@ const Scheduler = Widget.inherit({
         return startDate;
     },
 
-    _getEndDate: function(appointment) {
+    _getEndDate: function(appointment, skipNormalize) {
         var endDate = this.fire("getField", "endDate", appointment);
 
         if(endDate) {
@@ -2914,7 +2912,7 @@ const Scheduler = Widget.inherit({
 
             endDate = this.fire("convertDateByTimezone", endDate, endDateTimeZone);
 
-            this.fire("updateAppointmentEndDate", {
+            !skipNormalize && this.fire("updateAppointmentEndDate", {
                 endDate: endDate,
                 callback: function(result) {
                     endDate = result;
@@ -3203,7 +3201,6 @@ const Scheduler = Widget.inherit({
         * @name dxSchedulerMethods.registerKeyHandler
         * @publicName registerKeyHandler(key, handler)
         * @hidden
-        * @inheritdoc
         */
 
 }).include(AsyncTemplateMixin, DataHelperMixin);
